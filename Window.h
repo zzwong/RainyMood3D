@@ -27,6 +27,10 @@
 #include <math.h>
 #include <iostream>
 
+#include "shader.h"
+#include "TextureHandler.h"
+
+#include "SkyBox.h"
 #include "OBJObject.h"
 #include "Node.h"
 #include "Group.h"

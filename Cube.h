@@ -8,6 +8,8 @@ public:
     Cube(GLuint shader);
     ~Cube();
     
+    float angle;
+    
     void draw(glm::mat4 C);
     void update();
     
