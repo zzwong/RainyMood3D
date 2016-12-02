@@ -37,6 +37,7 @@
 #include "Geode.h"
 #include "Cube.h"
 #include "MatrixTransform.h"
+#include "Water.h"
 
 #include <irrKlang.h>
 

@@ -40,6 +40,7 @@ ISoundEngine* engine;
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;
 SkyBox * skybox;
+Water * water;
 
 
 void Window::initialize_objects()
@@ -62,6 +63,7 @@ void Window::initialize_objects()
     
     skybox = new SkyBox();
     cube = new Cube(shaderProgram);
+    water = new Water(shaderProgram);
 }
 
 void Window::clean_up()
@@ -162,7 +164,9 @@ void Window::display_callback(GLFWwindow * window)
     glDepthMask(GL_TRUE);
     
     glUseProgram(shaderProgram);
-    cube->draw(glm::mat4(1.0f));
+    //cube->draw(glm::mat4(1.0f));
+    glDisable(GL_CULL_FACE);
+    water->draw(glm::mat4(1.0f));
     
     
     // Gets events, including input such as keyboard and mouse or window resizing
@@ -209,17 +213,17 @@ void Window::cursor_position_callback(GLFWwindow *window, double xpos, double yp
     // Rotate Model
     if (mouseRotateMode){
         
-        //        glfwGetCursorPos(window, &currX, &currY);
+        //glfwGetCursorPos(window, &currX, &currY);
         glm::vec3 curr_pos = track_ball_mapping((float) mouseX, (float)mouseY);
-        //        glm::vec3 curr_pos = track_ball_mapping(currX, currY);
+        //glm::vec3 curr_pos = track_ball_mapping(currX, currY);
         glm::vec3 destination = track_ball_mapping((float)xpos, (float)ypos);
         
-        glm::vec3 rot_vec = glm::cross(curr_pos, destination);
+        //glm::vec3 rot_vec = glm::cross(curr_pos, destination);
         float rot_angle = glm::acos( glm::dot(curr_pos, destination) / (glm::length(curr_pos) * glm::length(destination)));
         
 
         glm::vec3 rotAxis = glm::cross(curr_pos, destination);
-        float rotAngle = 0.01f;
+        //float rotAngle = 0.01f;
         glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), glm::radians(rot_angle+1), rotAxis);
         glm::vec4 position(cam_pos, 1.0f);
         glm::vec4 newCamPos = rotMat * position;
@@ -238,8 +242,8 @@ void Window::cursor_position_callback(GLFWwindow *window, double xpos, double yp
         //        currentObj->translateX((-.05f)*(newX - mouseX));
         //        currentObj->translateY((-.05f)*(newY - mouseY));
         cout << "translating" << endl;
-        float xdelta = xpos - mouseX;// - xpos;
-        float ydelta = ypos-mouseY;// - ypos;
+        //float xdelta = xpos - mouseX;// - xpos;
+        //float ydelta = ypos-mouseY;// - ypos;
         //        cout << xdelta << " " << ydelta << endl;
         mouseX = xpos;
         mouseY = ypos;
