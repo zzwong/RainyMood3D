@@ -27,6 +27,9 @@
 #include <math.h>
 #include <iostream>
 
+#include "glm/gtc/matrix_access.hpp"
+#include "glm/ext.hpp"
+
 #include "shader.h"
 #include "TextureHandler.h"
 #include "Terrain.h"
@@ -59,13 +62,16 @@ public:
     static void clean_up();
     static GLFWwindow* create_window(int width, int height);
     static void resize_callback(GLFWwindow*, int width, int height);
-    static void idle_callback();
+    static void idle_callback(GLFWwindow*);
     static void display_callback(GLFWwindow*);
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
     static void mouse_button_callback(GLFWwindow* window, int key, int action, int mods);
     static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos);
     static void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-    static glm::vec3 track_ball_mapping(float x, float y);
+    static glm::vec3 trackballMapping(double xpos, double ypos, int width, int height);
+    static void point_callback(GLFWwindow* window);
+    static void mouse_move_callback(GLFWwindow*, double, double);
+    
 };
 
 

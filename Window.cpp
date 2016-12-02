@@ -14,16 +14,27 @@ glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 // Declare shader programs here
 GLint shaderProgram;
 GLint skyShaderProgram;
+GLint waterProgram;
 
 // Texture
 GLuint cubeMapTexture;
 vector<const char*> faces;
+
+// Mouse
+int leftMouseDown;
+int rightMouseDown;
 
 // define shader paths here
 #define V_SHADER_PATH "../shader.vert"
 #define F_SHADER_PATH "../shader.frag"
 #define SKYBOX_V_SHADER_PATH "../skyboxShader.vert"
 #define SKYBOX_F_SHADER_PATH "../skyboxShader.frag"
+#define W_V_SHADER_PATH "../waterShader.vert"
+#define W_F_SHADER_PATH "../waterShader.frag"
+
+// Camera movement
+glm::vec3 lastPoint;
+double lastX, lastY;
 
 // static vars
 int Window::width, Window::height;
@@ -53,7 +64,8 @@ void Window::initialize_objects()
     // Load shader programs.
     shaderProgram = LoadShaders(V_SHADER_PATH, F_SHADER_PATH);
     skyShaderProgram = LoadShaders(SKYBOX_V_SHADER_PATH, SKYBOX_F_SHADER_PATH);
-    
+    waterProgram = LoadShaders(W_V_SHADER_PATH, W_F_SHADER_PATH);
+
     // Textures
     faces.push_back("2rt.ppm");
     faces.push_back("2lf.ppm");
@@ -72,7 +84,7 @@ void Window::initialize_objects()
     tr = new Terrain(shaderProgram, 1400, 800, 5);
     tr->update();
 
-    water = new Water(shaderProgram);
+    water = new Water(waterProgram);
 
 }
 
@@ -133,7 +145,7 @@ GLFWwindow* Window::create_window(int width, int height)
     return window;
 }
 
-void Window::idle_callback()
+void Window::idle_callback(GLFWwindow* window)
 {
     cube->update();
 }
@@ -192,6 +204,8 @@ void Window::display_callback(GLFWwindow * window)
 
     //cube->draw(glm::mat4(1.0f));
 
+    //Draw the water
+    glUseProgram(waterProgram);
     glm::mat4 water_m(glm::mat4(1.0f));
     water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
     water_m *= glm::rotate(glm::mat4(1.0f), .1f, glm::vec3(1.0, 0,0));
@@ -208,29 +222,12 @@ void Window::display_callback(GLFWwindow * window)
 
 void Window::mouse_button_callback(GLFWwindow *window, int key, int action, int mods)
 {
-    if (key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
-        mouseRotateMode = true;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-        cout << "pressed" << endl;
+    if(key == GLFW_MOUSE_BUTTON_RIGHT){
+        rightMouseDown = (action == GLFW_PRESS);
     }
-    if (key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE){
-        mouseRotateMode = false;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-        cout << "released" << endl;
-    }
-    if (mods == GLFW_MOD_SHIFT){
-        if (key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS){
-            mouseTranslateMode = true;
-            glfwGetCursorPos(window, &mouseX, &mouseY);
-            cout << "shift pressed" << endl;
-            
-        }
-        if (key == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE){
-            mouseTranslateMode = false;
-            cout << "shift press release" << endl;
-        }
-    } else {
-        mouseTranslateMode = false;
+    if(key == GLFW_MOUSE_BUTTON_LEFT){
+        leftMouseDown = (action == GLFW_PRESS);
+        glfwGetCursorPos(window, &lastX, &lastY);
     }
 }
 
@@ -248,46 +245,25 @@ void Window::scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
     }
 }
 
-void Window::cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
-{
-    // Rotate Model
-    if (mouseRotateMode){
-        
-        //glfwGetCursorPos(window, &currX, &currY);
-        glm::vec3 curr_pos = track_ball_mapping((float) mouseX, (float)mouseY);
-        //glm::vec3 curr_pos = track_ball_mapping(currX, currY);
-        glm::vec3 destination = track_ball_mapping((float)xpos, (float)ypos);
-        
-        //glm::vec3 rot_vec = glm::cross(curr_pos, destination);
-        float rot_angle = glm::acos( glm::dot(curr_pos, destination) / (glm::length(curr_pos) * glm::length(destination)));
-        
 
-        glm::vec3 rotAxis = glm::cross(curr_pos, destination);
-        //float rotAngle = 0.01f;
-        glm::mat4 rotMat = glm::rotate(glm::mat4(1.0f), glm::radians(rot_angle+1), rotAxis);
-        glm::vec4 position(cam_pos, 1.0f);
-        glm::vec4 newCamPos = rotMat * position;
-        glm::vec4 upCam(cam_up, 1.0f);
-        glm::vec4 newCamUp = rotMat * upCam;
-        cam_pos.x = newCamPos.x;
-        cam_pos.y = newCamPos.y;
-        cam_pos.z = newCamPos.z;
-        cam_up.x = newCamUp.x;
-        cam_up.y = newCamUp.y;
-        cam_up.z = newCamUp.z;
+void Window::mouse_move_callback(GLFWwindow* window, double xpos, double ypos){
+    
+    if(leftMouseDown) {
+        float angle;
+        angle = (float) (lastX - xpos) / 100.0f;
+        cam_pos = glm::vec3(glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(cam_pos, 1.0f));
+        cam_up = glm::vec3(glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f)) * glm::vec4(cam_up, 1.0f));
+        //Now rotate vertically based on current orientation
+        angle = (float) (ypos - lastY) / 100.0f;
+        glm::vec3 axis = glm::cross((cam_pos - cam_look_at), cam_up);
+        cam_pos = glm::vec3(glm::rotate(glm::mat4(1.0f), angle, axis) * glm::vec4(cam_pos, 1.0f));
+        cam_up = glm::vec3(glm::rotate(glm::mat4(1.0f), angle, axis) * glm::vec4(cam_up, 1.0f));
+        // Now update the camera
         V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+        lastX = xpos;
+        lastY = ypos;
     }
-    // Translate Model
-    if (mouseTranslateMode){
-        //        currentObj->translateX((-.05f)*(newX - mouseX));
-        //        currentObj->translateY((-.05f)*(newY - mouseY));
-        cout << "translating" << endl;
-        //float xdelta = xpos - mouseX;// - xpos;
-        //float ydelta = ypos-mouseY;// - ypos;
-        //        cout << xdelta << " " << ydelta << endl;
-        mouseX = xpos;
-        mouseY = ypos;
-    }
+    
 }
 
 void Window::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -306,17 +282,27 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
     }
 }
 
-glm::vec3 Window::track_ball_mapping(float x, float y)
-{
-    glm::vec3 v;    // Synthesized 3D position of th emouse location on trackball
-    float d;        // the depth of the mouse location, Delta b/t the center of the trackball and the z position of the mouse
-    v.x = (2.0 * x - width) / width;
-    v.y = (height - 2.0 * y) / height;
-    v.z = 0.0;
-    d = glm::length(v);
-    d = (d < 1.0) ? d : 1.0;
-    v.z = glm::sqrt(1.001 - d*d);
-    return glm::normalize(v);
+glm::vec3 Window::trackballMapping(double xpos, double ypos, int width, int height){
+    glm::vec3 point;
+    float d;
+    
+    point.x = (2.0f*xpos - width)/(width);
+    point.y = (height - 2.0f*ypos)/(height);
+    point.z = 0.0f;
+    
+    d = glm::length(point);
+    d = (d < 1.0f) ? d : 1.0f;
+    point.z = sqrtf(1.001f - d*d);
+    point = glm::normalize(point);
+    
+    return point;
 }
 
-
+void Window::point_callback(GLFWwindow* window){
+    //Get mouse pos
+    double lastx, lasty;
+    glfwGetCursorPos(window, &lastx, &lasty);
+    
+    //Update last point
+    lastPoint = trackballMapping(lastx, lasty, width, height);
+}

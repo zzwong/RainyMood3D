@@ -28,12 +28,20 @@ void error_callback(int error, const char* description)
 
 void setup_callbacks()
 {
-    glfwSetMouseButtonCallback(window, Window::mouse_button_callback);
+    // Set the error callback
     glfwSetErrorCallback(error_callback);
+    // Set the key callback
     glfwSetKeyCallback(window, Window::key_callback);
-    glfwSetCursorPosCallback(window, Window::cursor_position_callback);
-    glfwSetScrollCallback(window, Window::scroll_callback);
+    // Set the window resize callback
     glfwSetFramebufferSizeCallback(window, Window::resize_callback);
+    // Set the scroll callback
+    glfwSetScrollCallback(window, Window::scroll_callback);
+    // Set the mouse callback
+    glfwSetMouseButtonCallback(window, Window::mouse_button_callback);
+    // Set the cursor position callback
+    glfwSetCursorPosCallback(window, Window::mouse_move_callback);
+    
+
 }
 
 void setup_glew()
@@ -101,7 +109,7 @@ int main(void)
         // Main render display callback. Rendering of objects is done here.
         Window::display_callback(window);
         // Idle callback. Updating objects, etc. can be done here.
-        Window::idle_callback();
+        Window::idle_callback(window);
     }
     
     Window::clean_up();
