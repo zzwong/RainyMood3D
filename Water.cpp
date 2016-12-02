@@ -49,8 +49,14 @@ void Water::draw(glm::mat4 C){
     
     glBindVertexArray(VAO);
     //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glUniform1f(glGetUniformLocation(shaderProgram, "water"), false);
+    
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    
     glBindVertexArray(0);
     
     

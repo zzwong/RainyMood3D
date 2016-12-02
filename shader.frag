@@ -107,7 +107,7 @@ void main()
     
 //    color = texture(skybox, TexCoords);
     if(wire)
-        color = vec4(0.0f, .2f, .87f, sampleExtraOutput);
+        color = vec4(0.0f, .5f, .5f, sampleExtraOutput);
     else
         color = vec4(.87, .3, 0.0, sampleExtraOutput);
     

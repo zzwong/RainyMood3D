@@ -15,12 +15,12 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     scale = scl;
     noise_gen = new FastNoise();
     
+    
     update();
     
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-//    glGenBuffers(1, &EBO);
-//    glGenBuffers(1, &NBO);
+    glGenBuffers(1, &EBO);
     
     // Bind VAO
     glBindVertexArray(VAO);
@@ -32,17 +32,6 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
     
-    // Bind EBO
-//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_), indices_, GL_STATIC_DRAW);
-    
-    // Bind the normals
-//    glBindBuffer(GL_ARRAY_BUFFER, NBO);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(normals_), normals_, GL_STATIC_DRAW);
-    
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (GLvoid*)0);
-    
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 }
@@ -50,8 +39,7 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
 Terrain::~Terrain(){
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
-//    glDeleteBuffers(1, &NBO);
-//    glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &EBO);
 }
 
 void Terrain::draw(glm::mat4 C){
@@ -67,16 +55,10 @@ void Terrain::draw(glm::mat4 C){
     
     glBindVertexArray(VAO);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-//    glDrawElements(GL_TRIANGLE_STRIP, (int)vertices.size(), GL_UNSIGNED_INT, 0);
-//    std::cout << glGetError() << std::endl;
+
     glUniform1f( glGetUniformLocation(shaderProgram, "wire"), true);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)vertices.size());
-//    std::cout << glGetError() << std::endl;
-    
-//    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-    //glDrawArrays(GL_POINTS, 0, 24);
-    
-//    vertices.clear();
+
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     glUniform1f( glGetUniformLocation(shaderProgram, "wire"), false);
@@ -91,7 +73,6 @@ float map(float val, float istart, float istop, float ostart, float ostop){
 }
 
 void Terrain::update(){
-//    glBindVertexArray(VAO);
     vertices.clear();
     flying -= 0.1;
     
@@ -101,21 +82,26 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-
             terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
 //            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;
-            xoff += 2.5;
+            xoff += 1.5f;
         }
-        yoff += 2.5;
+        yoff += 1.5f;
     }
     
-    for (int y = 0; y < rows-1; y++){
-        for (int x = 0; x < cols; x++){
-            vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]  ));
+    for(int y = 0; y < rows-1; y++){
+        for(int x = 0; x < cols; x++){
+            vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
             vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
             
+
+
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferSubData(GL_ARRAY_BUFFER, 0, vertices.size() * sizeof(vertices), vertices.data());
+    
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    
 }

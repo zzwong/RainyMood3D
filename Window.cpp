@@ -8,7 +8,7 @@ int tr_counter = 0;
 
 // Default camera parameters
 glm::vec3 cam_pos(0.0f, 70.0f, -70.0f);		// e  | Position of camera
-glm::vec3 cam_look_at(0.0f, -10.0f, 0.0f);	// d  | This is where the camera looks at
+glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
 // Declare shader programs here
@@ -81,7 +81,7 @@ void Window::initialize_objects()
     skybox = new SkyBox();
     cube = new Cube(shaderProgram);
 
-    tr = new Terrain(shaderProgram, 1400, 800, 5);
+    tr = new Terrain(shaderProgram, 2000, 1600, 10);
     tr->update();
 
     water = new Water(waterProgram);
@@ -188,7 +188,10 @@ void Window::display_callback(GLFWwindow * window)
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     glDepthMask(GL_TRUE);
     
-    glDisable(GL_CULL_FACE);
+//    glDisable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+    glCullFace(GL_BACK);
+    glDepthMask(GL_TRUE);
     
     glUseProgram(shaderProgram);
 
@@ -196,8 +199,8 @@ void Window::display_callback(GLFWwindow * window)
 //    if (tr_counter % 5 == 0)
     tr->update();
     glm::mat4 transform(glm::mat4(1.0f));
-    transform *= glm::rotate(glm::mat4(1.0f), 90.0f, glm::vec3(1.0, 0, 0));
-    transform *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -5.0f, 220));
+    transform *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
+    transform *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -500.0f, 225.0f));
     tr->draw(transform);
 //    tr->draw(glm::translate(glm::mat4(1.0f), glm::vec3(-30.0f, -5.0f, 0)));
 //    tr->draw(glm::mat4(1.0f));
@@ -205,15 +208,14 @@ void Window::display_callback(GLFWwindow * window)
     //cube->draw(glm::mat4(1.0f));
 
     //Draw the water
+    glDisable(GL_CULL_FACE);
     glUseProgram(waterProgram);
     glm::mat4 water_m(glm::mat4(1.0f));
     water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
-    water_m *= glm::rotate(glm::mat4(1.0f), .1f, glm::vec3(1.0, 0,0));
+    //water_m *= glm::rotate(glm::mat4(1.0f), .1f, glm::vec3(1.0, 0,0));
     water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
     water->draw(water_m);
 
-    
-    
     // Gets events, including input such as keyboard and mouse or window resizing
     glfwPollEvents();
     // Swap buffers
