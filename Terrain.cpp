@@ -3,6 +3,9 @@
 #include "Window.h"
 #include <random>
 
+
+float map(float val, float istart, float istop, float ostart, float ostop);
+
 Terrain::Terrain(GLuint shader, int w, int h, int scl){
     this->shaderProgram = shader;
     width = w;
@@ -52,6 +55,7 @@ Terrain::~Terrain(){
 }
 
 void Terrain::draw(glm::mat4 C){
+    toWorld = C;
     glm::mat4 modelview = Window::V * toWorld;
     
     uProjection = glGetUniformLocation(shaderProgram, "projection");
@@ -62,20 +66,33 @@ void Terrain::draw(glm::mat4 C){
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &this->toWorld[0][0]);
     
     glBindVertexArray(VAO);
-    
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 //    glDrawElements(GL_TRIANGLE_STRIP, (int)vertices.size(), GL_UNSIGNED_INT, 0);
 //    std::cout << glGetError() << std::endl;
+    glUniform1f( glGetUniformLocation(shaderProgram, "wire"), true);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)vertices.size());
 //    std::cout << glGetError() << std::endl;
     
 //    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     //glDrawArrays(GL_POINTS, 0, 24);
-    glBindVertexArray(0);
+    
 //    vertices.clear();
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    
+    glUniform1f( glGetUniformLocation(shaderProgram, "wire"), false);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)vertices.size());
+    
+    
+    glBindVertexArray(0);
+}
+
+float map(float val, float istart, float istop, float ostart, float ostop){
+    return ostart + (ostop-ostart) * ((val - istart) / (istop - istart));
 }
 
 void Terrain::update(){
 //    glBindVertexArray(VAO);
+    vertices.clear();
     flying -= 0.1;
     
     float yoff = flying;
@@ -84,16 +101,18 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * ((rand() % 20)-10);
-            xoff += 0.2;
+
+            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
+//            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;
+            xoff += 2.5;
         }
-        yoff += 0.2;
+        yoff += 2.5;
     }
     
     for (int y = 0; y < rows-1; y++){
         for (int x = 0; x < cols; x++){
-            vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y] *2 ));
-            vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1] *2));
+            vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]  ));
+            vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
             
         }
     }

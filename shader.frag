@@ -72,6 +72,10 @@ uniform PointLight pointLight;
 uniform SpotLight spotLight;
 uniform Material material;
 uniform bool normal_coloring;
+
+uniform bool wire;
+uniform bool water;
+
 //
 //// Function prototypes
 vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir);
@@ -102,8 +106,13 @@ void main()
 //        color = vec4(norm, sampleExtraOutput);
     
 //    color = texture(skybox, TexCoords);
+    if(wire)
+        color = vec4(0.0f, .2f, .87f, sampleExtraOutput);
+    else
+        color = vec4(.87, .3, 0.0, sampleExtraOutput);
     
-    color = vec4(0.0f, .2f, .87f, sampleExtraOutput);
+    if (water)
+        color = vec4(0.0, 0.0, 1.0, 1.0);
     
     // Color everything a hot pink color. An alpha of 1.0f means it is not transparent.
 //    color = vec4(1.0f, 0.41f, 0.7f, sampleExtraOutput);

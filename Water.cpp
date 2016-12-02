@@ -45,10 +45,12 @@ void Water::draw(glm::mat4 C){
     glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
     glUniformMatrix4fv(uModelview, 1, GL_FALSE, &modelview[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &this->toWorld[0][0]);
+    glUniform1f(glGetUniformLocation(shaderProgram, "water"), true);
     
     glBindVertexArray(VAO);
     //glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    glUniform1f(glGetUniformLocation(shaderProgram, "water"), false);
     glBindVertexArray(0);
     
     
