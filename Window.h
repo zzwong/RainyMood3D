@@ -29,6 +29,7 @@
 
 #include "shader.h"
 #include "TextureHandler.h"
+#include "Terrain.h"
 
 #include "SkyBox.h"
 #include "OBJObject.h"

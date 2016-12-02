@@ -5,7 +5,7 @@ using namespace std;
 const char* window_title = "CSE 167 Final Project";
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 0.0f, 5.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 10.0f, 40.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -40,6 +40,7 @@ ISoundEngine* engine;
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;
 SkyBox * skybox;
+Terrain * tr;
 
 
 void Window::initialize_objects()
@@ -62,6 +63,8 @@ void Window::initialize_objects()
     
     skybox = new SkyBox();
     cube = new Cube(shaderProgram);
+    tr = new Terrain(shaderProgram, 1000, 800, 5);
+    tr->update();
 }
 
 void Window::clean_up()
@@ -156,13 +159,18 @@ void Window::display_callback(GLFWwindow * window)
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glBindVertexArray(skybox->getVAO());
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
-    skybox->draw(skyShaderProgram);
+//    skybox->draw(skyShaderProgram);
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     glDepthMask(GL_TRUE);
     
+    glDisable(GL_CULL_FACE);
+    
     glUseProgram(shaderProgram);
-    cube->draw(glm::mat4(1.0f));
+//    cube->draw(glm::mat4(1.0f));
+    
+//    tr->update();
+    tr->draw(glm::mat4(1.0f));
     
     
     // Gets events, including input such as keyboard and mouse or window resizing
@@ -201,7 +209,16 @@ void Window::mouse_button_callback(GLFWwindow *window, int key, int action, int 
 
 void Window::scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 {
-    // TODO   
+    if (yoffset < 0){
+        // negative y offset is to zoom out
+        cam_pos = cam_pos + glm::vec3(0,0, 0.5);
+        V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+
+    } else {
+        // pos y offset is to zoom in
+        cam_pos = cam_pos - glm::vec3(0,0,0.5);
+        V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+    }
 }
 
 void Window::cursor_position_callback(GLFWwindow *window, double xpos, double ypos)

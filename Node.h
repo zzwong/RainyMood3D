@@ -9,6 +9,7 @@
 #endif
 #include <GLFW/glfw3.h>
 
+
 class Node {
 public:
     virtual void draw(glm::mat4 C) = 0; //Used to draw the geodes

@@ -63,6 +63,7 @@ void Cube::draw(glm::mat4 C){
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &this->toWorld[0][0]);
     
     glBindVertexArray(VAO);
+    
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 //    glDrawArrays(GL_POINTS, 0, 24);
     glBindVertexArray(0);
