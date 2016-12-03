@@ -13,10 +13,10 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     cols = w / scl;
     rows = h / scl;
     scale = scl;
-    noise_gen = new FastNoise();
+    noise_gen = new FastNoise(3);
     
     
-    update();
+    update(); // Generate the height map at time of 0
     
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -54,13 +54,14 @@ void Terrain::draw(glm::mat4 C){
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &this->toWorld[0][0]);
     
     glBindVertexArray(VAO);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // Show lines
 
     glUniform1f( glGetUniformLocation(shaderProgram, "wire"), true);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)vertices.size());
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
+    // Tell shader to fill triangle strip with color
     glUniform1f( glGetUniformLocation(shaderProgram, "wire"), false);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)vertices.size());
     
@@ -72,6 +73,10 @@ float map(float val, float istart, float istop, float ostart, float ostop){
     return ostart + (ostop-ostart) * ((val - istart) / (istop - istart));
 }
 
+/**
+ * Update vertices each time display_callback is called.
+ * When update is caled we are going forward in time
+ */
 void Terrain::update(){
     vertices.clear();
     flying -= 0.1;
@@ -82,20 +87,29 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
+//            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
+            terrain[x][y] = map(noise_gen->GetGradientFractal(xoff, yoff), 0, 1, -100, 150);
+            
 //            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;
             xoff += 1.5f;
         }
         yoff += 1.5f;
     }
+    bool flip = true;
     
     for(int y = 0; y < rows-1; y++){
-        for(int x = 0; x < cols; x++){
-            vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
-            vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
-            
-
-
+        if (flip){
+            for(int x = 0; x < cols; x++){
+                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+            }
+            flip = !flip;
+        } else {
+            for(int x = cols; x > 0; x--){
+                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+            }
+            flip = !flip;
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, VBO);

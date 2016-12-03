@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 70.0f, -70.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 100.0f, -70.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -91,11 +91,13 @@ void Window::initialize_objects()
 void Window::clean_up()
 {
     // TODO
-    // delete(skybox)
+    delete(skybox);
     delete(cube);
+    delete(tr);
     engine->drop();
     glDeleteProgram(shaderProgram);
     glDeleteProgram(skyShaderProgram);
+    glDeleteProgram(waterProgram);      // no more drinkable water in LA
 }
 
 GLFWwindow* Window::create_window(int width, int height)
