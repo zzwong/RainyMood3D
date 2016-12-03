@@ -53,6 +53,9 @@ ISoundEngine* engine;
 //Pause the terrain
 bool pause_key = false;
 
+// San Diego Height Map
+#define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
+
 
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;

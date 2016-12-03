@@ -13,6 +13,7 @@ class Terrain : public Geode {
     
 public:
     Terrain(GLuint shader, int c, int r, int scl);
+    Terrain(GLuint shader, const char* heightmap, int scl);
     ~Terrain();
     
     void draw(glm::mat4 C);
@@ -25,6 +26,7 @@ protected:
     int width, height;
     float flying = 0;
     float yTerrain = 0;
+    unsigned char* hmap;
     
     glm::mat4 toWorld;
     std::vector<glm::vec3> vertices;
