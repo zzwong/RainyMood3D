@@ -64,8 +64,6 @@ glm::mat4 trn(1.0f);
 Water * water;
 glm::mat4 water_m(1.0f);
 
-Group * scene;
-
 void Window::initialize_objects()
 {
     // Load shader programs.
@@ -93,6 +91,7 @@ void Window::initialize_objects()
 
     water = new Water(waterProgram);
     water->createFrameBuffer();
+    water->getLocations();
     
     //For terrain
     trn *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
@@ -100,10 +99,6 @@ void Window::initialize_objects()
     //For water
     water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
     water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
-    
-    scene = new Group();
-    scene->addChild(tr);
-    scene->addChild(water);
     
     clipPlaneW = glGetUniformLocation(waterProgram, "plane");
     clipPlaneN = glGetUniformLocation(shaderProgram, "plane");
@@ -231,11 +226,13 @@ void Window::display_callback(GLFWwindow * window)
     float distance = 2*(cam_pos.y + 140);
     cam_pos.y -= distance;
     water->bindFrameBuffer(water->getReflectionFBO(), width, height);
-    cam_pos.y += distance;
     
-
     tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
+    
+    //Move camera back
+    cam_pos.y += distance;
+
     
     //Render everything below water (refraction)
     glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
@@ -248,7 +245,6 @@ void Window::display_callback(GLFWwindow * window)
     glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
     glUseProgram(waterProgram);
     glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
-    
     water->unbindFrameBuffer();
     glUseProgram(shaderProgram);
     tr->draw(trn);

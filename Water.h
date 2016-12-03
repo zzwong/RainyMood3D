@@ -27,6 +27,8 @@ public:
     GLuint getRefractionTex();
     void bindFrameBuffer(GLuint fbo, int width, int height);
     void unbindFrameBuffer();
+    void getLocations();
+    void connectTex();
     
 protected:
     GLfloat vertices[6][3] = {
@@ -43,6 +45,8 @@ protected:
     GLuint refractionBuffer, reflectionBuffer;
     GLuint reflectionTexture, reflectionDepth;
     GLuint refractionTexture, refractionDepth;
+    
+    GLuint reflectionTextLoc, refractionTexLoc;
 };
 
 

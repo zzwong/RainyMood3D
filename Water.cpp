@@ -130,6 +130,23 @@ void Water::unbindFrameBuffer(){
     glViewport(0, 0, Window::width, Window::height);
 }
 
+void Water::getLocations(){
+    reflectionTextLoc = glGetUniformLocation(shaderProgram, "reflectionTex");
+    refractionTexLoc = glGetUniformLocation(shaderProgram, "refractionTex");
+}
+
+void Water::connectTex(){
+    glUniform1i(reflectionTextLoc, 0);
+    glUniform1i(refractionTexLoc, 1);
+    
+    glBindVertexArray(VAO);
+    glEnableVertexAttribArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, reflectionTexture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, refractionTexture);
+}
+
 void Water::update(){
     
 }
