@@ -2,7 +2,7 @@
 // This is a sample fragment shader.
 //in vec3 fragPos;
 // You can output many things. The first vec4 type output determines the color of the fragment
-out vec4 color;
+layout (location = 0) out vec4 color;
 
 
 void main()

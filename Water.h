@@ -19,6 +19,15 @@ public:
     
     void draw(glm::mat4 C);
     void update();
+    
+    void createFrameBuffer();
+    GLuint getReflectionFBO();
+    GLuint getRefractionFBO();
+    GLuint getReflectionTex();
+    GLuint getRefractionTex();
+    void bindFrameBuffer(GLuint fbo, int width, int height);
+    void unbindFrameBuffer();
+    
 protected:
     GLfloat vertices[6][3] = {
         {-30.0f,-2.0f,30.0f},
@@ -30,6 +39,10 @@ protected:
     };
     
     glm::mat4 toWorld;
+    
+    GLuint refractionBuffer, reflectionBuffer;
+    GLuint reflectionTexture, reflectionDepth;
+    GLuint refractionTexture, refractionDepth;
 };
 
 

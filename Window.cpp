@@ -15,6 +15,7 @@ glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 GLint shaderProgram;
 GLint skyShaderProgram;
 GLint waterProgram;
+GLuint clipPlaneW, clipPlaneN;
 
 // Texture
 GLuint cubeMapTexture;
@@ -49,15 +50,21 @@ int mode = 0;
 ISoundEngine* engine;
 #define SPLOSION "explosion.wav"
 
+//Pause the terrain
+bool pause = false;
+
 
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;
 SkyBox * skybox;
 
 Terrain * tr;
+glm::mat4 trn(1.0f);
 
 Water * water;
+glm::mat4 water_m(1.0f);
 
+Group * scene;
 
 void Window::initialize_objects()
 {
@@ -85,6 +92,22 @@ void Window::initialize_objects()
     tr->update();
 
     water = new Water(waterProgram);
+    water->createFrameBuffer();
+    
+    //For terrain
+    trn *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
+    trn *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -500.0f, 225.0f));
+    //For water
+    water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
+    water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
+    
+    scene = new Group();
+    scene->addChild(tr);
+    scene->addChild(water);
+    
+    clipPlaneW = glGetUniformLocation(waterProgram, "plane");
+    clipPlaneN = glGetUniformLocation(shaderProgram, "plane");
+
 
 }
 
@@ -96,6 +119,7 @@ void Window::clean_up()
     engine->drop();
     glDeleteProgram(shaderProgram);
     glDeleteProgram(skyShaderProgram);
+    glDeleteProgram(waterProgram);
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -194,26 +218,45 @@ void Window::display_callback(GLFWwindow * window)
     glDepthMask(GL_TRUE);
     
     glUseProgram(shaderProgram);
+    
 
-//    cube->draw(glm::mat4(1.0f));
-//    if (tr_counter % 5 == 0)
-    tr->update();
-    glm::mat4 transform(glm::mat4(1.0f));
-    transform *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
-    transform *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -500.0f, 225.0f));
-    tr->draw(transform);
-//    tr->draw(glm::translate(glm::mat4(1.0f), glm::vec3(-30.0f, -5.0f, 0)));
-//    tr->draw(glm::mat4(1.0f));
 
-    //cube->draw(glm::mat4(1.0f));
+//  if (tr_counter % 5 == 0)
+    if(!pause)
+        tr->update();
+
+    //Render everything above water (reflection)
+    glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
+    //gotta move camera down 2*distance_to_water 70 - (-140) = 210*2 = 420 ayyy
+    float distance = 2*(cam_pos.y + 140);
+    cam_pos.y -= distance;
+    water->bindFrameBuffer(water->getReflectionFBO(), width, height);
+    cam_pos.y += distance;
+    
+
+    tr->draw(trn);
+    cube->draw(glm::mat4(1.0f));
+    
+    //Render everything below water (refraction)
+    glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
+    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
+    
+    tr->draw(trn);
+    cube->draw(glm::mat4(1.0f));
+    
+    //Render everything
+    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
+    glUseProgram(waterProgram);
+    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
+    
+    water->unbindFrameBuffer();
+    glUseProgram(shaderProgram);
+    tr->draw(trn);
+    cube->draw(glm::mat4(1.0f));
 
     //Draw the water
-    glDisable(GL_CULL_FACE);
     glUseProgram(waterProgram);
-    glm::mat4 water_m(glm::mat4(1.0f));
-    water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
-    //water_m *= glm::rotate(glm::mat4(1.0f), .1f, glm::vec3(1.0, 0,0));
-    water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
+    glDisable(GL_CULL_FACE);
     water->draw(water_m);
 
     // Gets events, including input such as keyboard and mouse or window resizing
@@ -280,6 +323,10 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         }
         if (key == GLFW_KEY_E){
             engine->play2D(SPLOSION);
+        }
+        
+        if (key == GLFW_KEY_P){
+            pause = !pause;
         }
     }
 }
