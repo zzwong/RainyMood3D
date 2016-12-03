@@ -28,7 +28,8 @@ void main()
 {
     vec4 worldPosition = modelview*vec4(position,1.0);
     
-    gl_ClipDistance[0] = dot(worldPosition,plane);
+    //TODO THIS IS WRONG FIX IT
+    //gl_ClipDistance[0] = dot(worldPosition,plane);
     
     // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
     gl_Position = projection * worldPosition;
