@@ -106,6 +106,8 @@ int main(void)
     // Loop while GLFW window should stay open
     while (!glfwWindowShouldClose(window))
     {
+        //Enable clipping
+        glEnable(GL_CLIP_DISTANCE0);
         // Main render display callback. Rendering of objects is done here.
         Window::display_callback(window);
         // Idle callback. Updating objects, etc. can be done here.

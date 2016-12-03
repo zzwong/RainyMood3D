@@ -30,6 +30,8 @@ Water::Water(GLuint shader){
 Water::~Water(){
     glDeleteVertexArrays(1, &VAO);
     glDeleteVertexArrays(1, &VBO);
+    glDeleteFramebuffers(1, &reflectionBuffer);
+    glDeleteFramebuffers(1, &refractionBuffer);
     glDeleteShader(shaderProgram);
 }
 
@@ -60,6 +62,89 @@ void Water::draw(glm::mat4 C){
     glBindVertexArray(0);
     
     
+}
+
+void Water::createFrameBuffer(){
+    
+    //Create the two FBOS
+    glGenBuffers(1, &reflectionBuffer);
+    glGenBuffers(1, &refractionBuffer);
+    
+    //Start with reflection
+    glBindFramebuffer(GL_FRAMEBUFFER, reflectionBuffer);
+    //Create texture
+    glGenTextures(1, &reflectionTexture);
+    //Bind texture
+    glBindTexture(GL_TEXTURE_2D, reflectionTexture);
+    //Give empty image(for now)
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 320, 180, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    //Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //Attach image to framebuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, reflectionTexture, 0);
+    //Create the reflection depth
+    glGenRenderbuffers(1, &reflectionDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, reflectionDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 320, 180);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, reflectionDepth);
+    
+    //Now on to refraction
+    glBindFramebuffer(GL_FRAMEBUFFER, refractionBuffer);
+    glGenTextures(1, &refractionTexture);
+    glBindTexture(GL_TEXTURE_2D, refractionTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1280, 720, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, refractionTexture, 0);
+    glGenRenderbuffers(1, &refractionDepth);
+    glBindRenderbuffer(GL_RENDERBUFFER, refractionDepth);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, 1280, 720);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, refractionDepth);
+}
+
+GLuint Water::getReflectionFBO(){
+    return reflectionBuffer;
+}
+
+GLuint Water::getRefractionFBO(){
+    return refractionBuffer;
+}
+
+GLuint Water::getReflectionTex(){
+    return reflectionTexture;
+}
+
+GLuint Water::getRefractionTex(){
+    return refractionTexture;
+}
+
+void Water::bindFrameBuffer(GLuint fbo, int width, int height){
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+    glViewport(0, 0, width, height);
+}
+
+void Water::unbindFrameBuffer(){
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, Window::width, Window::height);
+}
+
+void Water::getLocations(){
+    reflectionTextLoc = glGetUniformLocation(shaderProgram, "reflectionTex");
+    refractionTexLoc = glGetUniformLocation(shaderProgram, "refractionTex");
+}
+
+void Water::connectTex(){
+    glUniform1i(reflectionTextLoc, 0);
+    glUniform1i(refractionTexLoc, 1);
+    
+    glBindVertexArray(VAO);
+    glEnableVertexAttribArray(0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, reflectionTexture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, refractionTexture);
 }
 
 void Water::update(){

@@ -22,10 +22,16 @@ out vec3 Normal;
 out vec3 FragPos;
 //out vec3 TexCoords;
 
+uniform vec4 plane;
+
 void main()
 {
+    vec4 worldPosition = modelview*vec4(position,1.0);
+    
+    gl_ClipDistance[0] = dot(worldPosition,plane);
+    
     // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
-    gl_Position = projection * modelview * vec4(position.x, position.y, position.z, 1.0);
+    gl_Position = projection * worldPosition;
     sampleExtraOutput = 1.0f;
     FragPos = vec3(model * vec4(position, 1.0f));
     Normal = normal;
