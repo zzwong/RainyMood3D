@@ -71,7 +71,7 @@ public:
     static glm::vec3 trackballMapping(double xpos, double ypos, int width, int height);
     static void point_callback(GLFWwindow* window);
     static void mouse_move_callback(GLFWwindow*, double, double);
-    
+    static void drawSkybox();
 };
 
 

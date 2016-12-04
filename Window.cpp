@@ -95,10 +95,12 @@ void Window::initialize_objects()
     water = new Water(waterProgram);
     water->createFrameBuffer();
     water->getLocations();
+    water->connectTex();
     
     //For terrain
     trn *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
     trn *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -500.0f, 225.0f));
+   
     //For water
     water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
     water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
@@ -187,16 +189,7 @@ void Window::resize_callback(GLFWwindow * window, int width, int height)
     }
 }
 
-void Window::display_callback(GLFWwindow * window)
-{
-    tr_counter += 1;
-    
-//    cout << cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << endl;
-    // Clear the color and depth buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // Set the matrix mode to GL_MODELVIEW
-//    glMatrixMode(GL_MODELVIEW);
-    
+void Window::drawSkybox(){
     // Skybox
     glUseProgram(skyShaderProgram);
     glEnable(GL_CULL_FACE);
@@ -210,15 +203,23 @@ void Window::display_callback(GLFWwindow * window)
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     glDepthMask(GL_TRUE);
-    
-//    glDisable(GL_CULL_FACE);
+    // Set things back to normal
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
     glDepthMask(GL_TRUE);
+}
+
+void Window::display_callback(GLFWwindow * window)
+{
+    tr_counter += 1;
+
+    // Clear the color and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Set the matrix mode to GL_MODELVIEW
+    drawSkybox();
+    
     
     glUseProgram(shaderProgram);
-    
-
 
 //  if (tr_counter % 5 == 0)
     if(!pause_key)
@@ -230,18 +231,17 @@ void Window::display_callback(GLFWwindow * window)
     float distance = 2*(cam_pos.y + 140);
     cam_pos.y -= distance;
     water->bindFrameBuffer(water->getReflectionFBO(), width, height);
-    
+    //Draw things here <<<<<<<<
     tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
     
     //Move camera back
     cam_pos.y += distance;
 
-    
     //Render everything below water (refraction)
-    glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
+    glUniform4f(clipPlaneW, 0.0f, -1.0f, 0.0f, 140.0f);
     water->bindFrameBuffer(water->getRefractionFBO(), width, height);
-    
+    //Draw things here <<<<<<<<
     tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
     
@@ -251,6 +251,8 @@ void Window::display_callback(GLFWwindow * window)
     glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
     water->unbindFrameBuffer();
     glUseProgram(shaderProgram);
+    
+    //Draw things here <<<<<<<<
     tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
 
@@ -259,7 +261,7 @@ void Window::display_callback(GLFWwindow * window)
     glDisable(GL_CULL_FACE);
     water->draw(water_m);
 
-    // Gets events, including input such as keyboard and mouse or window resizing
+    // Gets events, including input such as keyboard and mouse or window resizinh
     glfwPollEvents();
     // Swap buffers
     glfwSwapBuffers(window);

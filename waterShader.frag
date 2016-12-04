@@ -16,5 +16,5 @@ void main()
     vec4 refractionColor = texture(refractionTex, texCoord);
     // Color everything a hot blue color. An alpha of 1.0f means it is not transparent.
     color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
-//    color = mix(reflectColor, refractionColor, 0.5);
+ //color = mix(reflectColor, refractionColor, 0.5);
 }

@@ -55,7 +55,6 @@ struct SpotLight {
 //
 //// Inputs to the fragment shader are the outputs of the same name from the vertex shader.
 //// Note that you do not have access to the vertex shader's default output, gl_Position.
-in float sampleExtraOutput;
 in vec3 Normal;
 in vec3 FragPos;
 in vec3 TexCoords;
@@ -107,12 +106,12 @@ void main()
     
 //    color = texture(skybox, TexCoords);
     if(wire)
-        color = vec4(0.0f, .5f, .5f, sampleExtraOutput);
+        color = vec4(0.0f, .5f, .5f, 1.0f);
     else
-        color = vec4(.87, .3, 0.0, sampleExtraOutput);
+        color = vec4(.87f, .3f, 0.0f, 1.0f);
     
     if (water)
-        color = vec4(0.0, 0.0, 1.0, 1.0);
+        color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
     
     // Color everything a hot pink color. An alpha of 1.0f means it is not transparent.
 //    color = vec4(1.0f, 0.41f, 0.7f, sampleExtraOutput);

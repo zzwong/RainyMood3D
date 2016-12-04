@@ -142,11 +142,9 @@ void Water::connectTex(){
     glBindVertexArray(VAO);
     glEnableVertexAttribArray(0);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, reflectionTexture);
+    glBindTexture(GL_TEXTURE_2D, getReflectionTex());
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, refractionTexture);
+    glBindTexture(GL_TEXTURE_2D, getRefractionTex());
 }
 
-void Water::update(){
-    
-}
+void Water::update(){}
