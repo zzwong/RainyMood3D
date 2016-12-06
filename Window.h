@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
+#include <ctime>
 
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/ext.hpp"

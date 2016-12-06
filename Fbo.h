@@ -37,6 +37,7 @@ private:
     
     GLuint fboRefr;
     GLuint refrTex, refrDepthTexture;
+    
 };
 
 #endif /* Fbo_hpp */

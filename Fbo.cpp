@@ -105,9 +105,14 @@ void FBO::bind(GLuint framebuffer){
     
     GLenum drawBuffs = GL_COLOR_ATTACHMENT0;
     glDrawBuffers(1, &drawBuffs);
+    
+    //Enable alpha blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void FBO::unbind(){
+    glDisable(GL_BLEND);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
 }
