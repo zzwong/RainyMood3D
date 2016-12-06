@@ -23,7 +23,6 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
     
     // Bind VAO
     glBindVertexArray(VAO);
@@ -81,7 +80,6 @@ Terrain::Terrain(GLuint shader, const char* filename, int scl){
     
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
     
     glBindVertexArray(VAO);
     

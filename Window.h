@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
+#include <ctime>
 
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/ext.hpp"
@@ -42,6 +43,8 @@
 #include "Cube.h"
 #include "MatrixTransform.h"
 #include "Water.h"
+
+#include "FBO.h"
 
 #include <irrKlang.h>
 
@@ -71,8 +74,15 @@ public:
     static glm::vec3 trackballMapping(double xpos, double ypos, int width, int height);
     static void point_callback(GLFWwindow* window);
     static void mouse_move_callback(GLFWwindow*, double, double);
-    
+    static void drawSkybox();
+    static void drawObjects();
+    static void drawReflection();
+    static void drawRefraction();
+    static void drawAll();
+    static void drawWater();
+    static void invertPitch();
 };
+
 
 
 #endif

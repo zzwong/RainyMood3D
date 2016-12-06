@@ -29,15 +29,16 @@ public:
     void unbindFrameBuffer();
     void getLocations();
     void connectTex();
+    GLuint getVAO();
     
 protected:
     GLfloat vertices[6][3] = {
-        {-30.0f,-2.0f,30.0f},
-        {30.0f,-2.0f,30.0f},
-        {30.0f,-2.0f,-30.0f},
-        {-30.0f,-2.0f,30.0f},
-        {-30.0f,-2.0f,-30.0f},
-        {30.0f,-2.0f,-30.0f}
+        {-150.0f,-2.0f,150.0f},
+        {150.0f,-2.0f,150.0f},
+        {150.0f,-2.0f,-150.0f},
+        {-150.0f,-2.0f,150.0f},
+        {-150.0f,-2.0f,-150.0f},
+        {150.0f,-2.0f,-150.0f}
     };
     
     glm::mat4 toWorld;

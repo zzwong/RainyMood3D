@@ -75,7 +75,7 @@ void setup_opengl_settings()
     // Set clear color
     //	glClearColor(0.05f, 0.8f, 0.85f, 1.0f);
     //    glClearColor(1.0f, 0.8f, 0.85f, 1.0f);
-    glClearColor(1.0, 0.3, 0.5, 1);
+    glClearColor(1.0, 1.0, 0.5, 1);
 }
 
 void print_versions()

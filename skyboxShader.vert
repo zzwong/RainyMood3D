@@ -12,8 +12,5 @@ void main()
 {
     // From previous assignment:
     gl_Position = projection * modelview * vec4(position.x, position.y, position.z, 1.0);
-    
-    // From tutorial
-//    gl_Position =   projection * view * vec4(position.x, position.y, position.z, 1.0);
     TexCoords = position;
 }

@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 100.0f, -70.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 0.0f, -70.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -50,6 +50,21 @@ int mode = 0;
 ISoundEngine* engine;
 #define SPLOSION "explosion.wav"
 
+//Pause the terrain
+bool pause_key = false;
+
+// San Diego Height Map
+#define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
+
+// dudvMap path
+#define DU_DV_MAP "waterdudv.ppm"
+#define NORMAL_MAP "waternormal.ppm"
+float WAVE_SPEED = 0.12f;
+float move_factor = 0.0f;
+
+time_t b_frame = 0.0f;
+time_t e_frame = 0.0f;
+time_t d_frame = 0.0f;
 
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;
@@ -62,15 +77,21 @@ Terrain * hm; // height map...
 // Heightmaps
 #define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
 #define SIMPLE_HEIGHT_MAP "fft-terrain.ppm"
-#define SMALL_H_MAP "44-terrain.ppm"
 
-//Pause the terrain
-bool pause_key = false;
 
 glm::mat4 trn(1.0f);
 
 Water * water;
 glm::mat4 water_m(1.0f);
+
+// FBOS
+FBO * waterFBO;
+//location of textures in shader
+GLuint loc_reflection, loc_refraction, loc_dudv, loc_move_factor, loc_cam_pos, loc_normal_map, loc_depth_map;
+//Location of textures
+GLuint dudvTex, normalTex;
+
+Water* water2;
 
 void Window::initialize_objects()
 {
@@ -100,21 +121,53 @@ void Window::initialize_objects()
     
     hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
 
+    //Create the water FBO
+    waterFBO = new FBO();
+    glUseProgram(waterProgram);
     water = new Water(waterProgram);
-    water->createFrameBuffer();
-    water->getLocations();
+    water2 = new Water(waterProgram);
+    //Get the locations
+    loc_reflection = glGetUniformLocation(waterProgram, "reflectionTex");
+    loc_refraction = glGetUniformLocation(waterProgram, "refractionTex");
+    loc_dudv = glGetUniformLocation(waterProgram, "dudvMap");
+    loc_move_factor = glGetUniformLocation(waterProgram, "moveFactor");
+    loc_cam_pos = glGetUniformLocation(waterProgram, "camPos");
+    loc_normal_map = glGetUniformLocation(waterProgram, "normalMap");
+    loc_depth_map = glGetUniformLocation(waterProgram, "depthMap");
+    
+    //Generate dudvTexture
+    glGenTextures(1, &dudvTex);
+    glBindTexture(GL_TEXTURE_2D, dudvTex);
+    int dudvW, dudvH;
+    unsigned char* dudv_image = TextureHandler::loadPPM(DU_DV_MAP, dudvH, dudvW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dudvW, dudvH, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, dudv_image);
+    //Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    //Generate normalmap
+    glGenTextures(1, &normalTex);
+    glBindTexture(GL_TEXTURE_2D, normalTex);
+    int normW, normH;
+    unsigned char* norm_image = TextureHandler::loadPPM(NORMAL_MAP, normH, normW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dudvW, dudvH, 0, GL_RGBA,
+                 GL_UNSIGNED_BYTE, norm_image);
+    //Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
     
     //For terrain
     trn *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
     trn *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -500.0f, 225.0f));
+   
     //For water
     water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
     water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
     
     clipPlaneW = glGetUniformLocation(waterProgram, "plane");
     clipPlaneN = glGetUniformLocation(shaderProgram, "plane");
-
-
 }
 
 void Window::clean_up()
@@ -180,6 +233,10 @@ GLFWwindow* Window::create_window(int width, int height)
 void Window::idle_callback(GLFWwindow* window)
 {
     cube->update();
+    
+    //Get time (end)
+    e_frame = time(NULL);
+    d_frame = b_frame - e_frame;
 }
 
 void Window::resize_callback(GLFWwindow * window, int width, int height)
@@ -192,87 +249,185 @@ void Window::resize_callback(GLFWwindow * window, int width, int height)
     if (height > 0)
     {
         P = glm::perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f);
+        //0.1f is near
+        //1000.0f is far
         V = glm::lookAt(cam_pos, cam_look_at, cam_up);
     }
 }
 
-void Window::display_callback(GLFWwindow * window)
-{
-    tr_counter += 1;
+void Window::invertPitch(){
+    float pitch = glm::asin(cam_look_at.y);
+    float yaw = glm::acos(cam_look_at.x/glm::cos(pitch));
+//    std::cout << pitch << " : P\n";
+//    std::cout << yaw << " : Y\n";
+    float invertPitch = -pitch;
     
-//    cout << cam_pos.x << " " << cam_pos.y << " " << cam_pos.z << endl;
-    // Clear the color and depth buffers
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // Set the matrix mode to GL_MODELVIEW
-//    glMatrixMode(GL_MODELVIEW);
-    
+    cam_look_at.x = glm::cos(invertPitch)*glm::cos(yaw);
+    cam_look_at.y = glm::sin(invertPitch);
+    cam_look_at.z = glm::cos(invertPitch)*glm::sin(yaw);
+}
+
+void Window::drawSkybox(){
     // Skybox
     glUseProgram(skyShaderProgram);
+//    V = glm::mat4(glm::mat3(Window::V));
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+//    glCullFace(GL_BACK);
     glFrontFace(GL_CW);
     glDepthMask(GL_FALSE);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glBindVertexArray(skybox->getVAO());
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(glGetUniformLocation(skyShaderProgram, "skybox"), 0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
     skybox->draw(skyShaderProgram);
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     glDepthMask(GL_TRUE);
-    
-//    glDisable(GL_CULL_FACE);
+//  Set things back to normal
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
     glDepthMask(GL_TRUE);
+    glDisable(GL_CULL_FACE);
+}
+
+void Window::drawObjects(){
+    drawSkybox();
     
     glUseProgram(shaderProgram);
-    
-
-
-//  if (tr_counter % 5 == 0)
-    if(!pause_key)
-        tr->update();
-
+    tr->draw(trn);
+    cube->draw(glm::mat4(1.0f));
+}
+void Window::drawReflection(){
     //Render everything above water (reflection)
     glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
-    //gotta move camera down 2*distance_to_water 70 - (-140) = 210*2 = 420 ayyy
-    float distance = 2*(cam_pos.y + 140);
+    //gotta move camera down 2*distance_to_water -70 - (-140) = 70*2 = 210 ayyy
+    float distance = 2*(70);
     cam_pos.y -= distance;
-    water->bindFrameBuffer(water->getReflectionFBO(), width, height);
+    invertPitch();
     
 //    tr->draw(trn);
 //    cube->draw(glm::mat4(1.0f));
+    waterFBO->bind(waterFBO->getReflectionFBO());
     
+    //Clear colors
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //Draw things here <<<<<<<<
+    drawObjects();
+
     //Move camera back
+    invertPitch();
     cam_pos.y += distance;
+}
+void Window::drawRefraction(){
+    glUniform4f(clipPlaneN, 0.0f, -1.0f, 0.0f, 140.0f);
+    waterFBO->bind(waterFBO->getRefractionFBO());
+    //Clear colors
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //Draw things here <<<<<<<<
+    drawObjects();
+}
 
-    
-    //Render everything below water (refraction)
-    glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
-    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
-    
+//<<<<<<< HEAD
+//    
+//    //Render everything below water (refraction)
+//    glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
+//    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
+//    
+////    tr->draw(trn);
+//    cube->draw(glm::mat4(1.0f));
+//    
+//    //Render everything
+//    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
+//    glUseProgram(waterProgram);
+//    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
+//    water->unbindFrameBuffer();
+//    glUseProgram(shaderProgram);
 //    tr->draw(trn);
-    cube->draw(glm::mat4(1.0f));
+////    hm->draw(trn);
+//    cube->draw(glm::mat4(1.0f));
+//=======
+void Window::drawAll(){
+    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f, 0.0f);
+    glUseProgram(waterProgram);
+    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 0.0f);
+    waterFBO->unbind();
     
-    //Render everything
-    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
-    glUseProgram(waterProgram);
-    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
-    water->unbindFrameBuffer();
-    glUseProgram(shaderProgram);
-    tr->draw(trn);
-//    hm->draw(trn);
-    cube->draw(glm::mat4(1.0f));
+    //Draw things here <<<<<<<<
+    drawObjects();
 
-    //Draw the water
+}
+
+void Window::drawWater(){
     glUseProgram(waterProgram);
+    //Move the waves
+    move_factor += (WAVE_SPEED*d_frame)+1.000005f;
+    move_factor = fmod(move_factor, 1.0f);
+    glUniform1f(loc_move_factor, move_factor);
+    
+    //Send camera position
+    glUniform3f(loc_cam_pos, cam_pos.x, cam_pos.y, cam_pos.z);
+    
+    //Connect the texture units
+    glUniform1i(loc_reflection, 4); //texunit 4 REFLECTION
+    glUniform1i(loc_refraction, 5); //texunit 5 REFRADTION
+    glUniform1i(loc_dudv, 6); //texunit 6 dudv
+    glUniform1i(loc_normal_map, 7);
+    glUniform1i(loc_depth_map, 8);
+    
+    //Bind vertex array for the water
+    glBindVertexArray(water->getVAO());
+    glEnableVertexAttribArray(0);
+    glEnable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, waterFBO->getReflTex());
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, waterFBO->getRefrTex());
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, dudvTex);
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D, normalTex);
+    glActiveTexture(GL_TEXTURE8);
+    glBindTexture(GL_TEXTURE_2D, waterFBO->getRefrDepth());
+    
+    
     glDisable(GL_CULL_FACE);
     water->draw(water_m);
+}
 
-    // Gets events, including input such as keyboard and mouse or window resizing
+void Window::display_callback(GLFWwindow * window)
+{
+    tr_counter += 1;
+
+    //Get time (seconds)
+    b_frame = time(NULL);
+    
+    // Clear the color and depth buffers
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Set the matrix mode to GL_MODELVIEW
+    drawSkybox();
+    
+    glUseProgram(shaderProgram);
+
+    if(!pause_key)
+        tr->update();
+    //Draw reflecions
+    drawReflection();
+    
+    //Render everything below water (refraction)
+    drawRefraction();
+    
+    //Render everything
+    drawAll();
+
+    //Draw the water
+    drawWater();
+    
+    // Gets events, including input such as keyboard and mouse or window resizinh
     glfwPollEvents();
     // Swap buffers
     glfwSwapBuffers(window);
+    
 }
 
 void Window::mouse_button_callback(GLFWwindow *window, int key, int action, int mods)
@@ -295,7 +450,7 @@ void Window::scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 
     } else {
         // pos y offset is to zoom in
-        cam_pos = cam_pos - glm::vec3(0,0,0.5);
+        cam_pos = cam_pos - glm::vec3(0,0,-0.5);
         V = glm::lookAt(cam_pos, cam_look_at, cam_up);
     }
 }

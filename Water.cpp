@@ -60,8 +60,6 @@ void Water::draw(glm::mat4 C){
     //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     glBindVertexArray(0);
-    
-    
 }
 
 void Water::createFrameBuffer(){
@@ -142,11 +140,13 @@ void Water::connectTex(){
     glBindVertexArray(VAO);
     glEnableVertexAttribArray(0);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, reflectionTexture);
+    glBindTexture(GL_TEXTURE_2D, getReflectionTex());
     glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, refractionTexture);
+    glBindTexture(GL_TEXTURE_2D, getRefractionTex());
 }
 
-void Water::update(){
-    
+void Water::update(){}
+
+GLuint Water::getVAO(){
+    return VAO;
 }

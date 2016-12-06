@@ -75,9 +75,7 @@ void SkyBox::draw(GLuint shaderProgram)
     // Now draw the SkyBox. We simply need to bind the VAO associated with it.
     glBindVertexArray(VAO);
     
-    glActiveTexture(GL_TEXTURE0);
-    glUniform1i(glGetUniformLocation(shaderProgram, "skybox"), 0);
-    //    glBindTexture(GL_TEXTURE_SkyBox_MAP, SkyBoxMapTexture);
+        //    glBindTexture(GL_TEXTURE_SkyBox_MAP, SkyBoxMapTexture);
     
     // Tell OpenGL to draw with triangles, using 36 indices, the type of the indices, and the offset to start from
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
