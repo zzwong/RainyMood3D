@@ -43,6 +43,8 @@
 #include "MatrixTransform.h"
 #include "Water.h"
 
+#include "FBO.h"
+
 #include <irrKlang.h>
 
 

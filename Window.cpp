@@ -67,6 +67,9 @@ glm::mat4 trn(1.0f);
 Water * water;
 glm::mat4 water_m(1.0f);
 
+// FBOS
+FBO * waterFBO;
+
 void Window::initialize_objects()
 {
     // Load shader programs.
@@ -92,6 +95,8 @@ void Window::initialize_objects()
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
     tr->update();
 
+    waterFBO = new FBO();
+    
     water = new Water(waterProgram);
     water->createFrameBuffer();
     water->getLocations();
