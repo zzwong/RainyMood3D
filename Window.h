@@ -79,6 +79,7 @@ public:
     static void drawRefraction();
     static void drawAll();
     static void drawWater();
+    static void invertPitch();
 };
 
 

@@ -24,7 +24,12 @@ public:
     GLuint createDepth();
     GLuint createDepthBuff();
     void checkErrors(GLuint fbo);
-    
+    GLuint getReflectionFBO();
+    GLuint getRefractionFBO();
+    GLuint getReflTex();
+    GLuint getRefrTex();
+    GLuint getReflDepth();
+    GLuint getRefrDepth();
     
 private:
     GLuint fboRefl;

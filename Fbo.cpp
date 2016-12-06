@@ -102,9 +102,34 @@ void FBO::bind(GLuint framebuffer){
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
     glViewport(0, 0, Window::width, Window::height);
+    
+    GLenum drawBuffs = GL_COLOR_ATTACHMENT0;
+    glDrawBuffers(1, &drawBuffs);
 }
 
 void FBO::unbind(){
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
+}
+GLuint FBO::getReflectionFBO(){
+    return fboRefl;
+}
+GLuint FBO::getRefractionFBO(){
+    return fboRefr;
+}
+
+GLuint FBO::getReflTex(){
+    return reflTex;
+}
+
+GLuint FBO::getRefrTex(){
+    return refrTex;
+}
+
+GLuint FBO::getRefrDepth(){
+    return refrDepthTexture;
+}
+
+GLuint FBO::getReflDepth(){
+    return reflDepthBuffer;
 }

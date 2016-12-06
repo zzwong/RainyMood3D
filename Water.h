@@ -29,6 +29,7 @@ public:
     void unbindFrameBuffer();
     void getLocations();
     void connectTex();
+    GLuint getVAO();
     
 protected:
     GLfloat vertices[6][3] = {

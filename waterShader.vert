@@ -13,7 +13,9 @@ uniform mat4 projection;
 uniform mat4 modelview;
 uniform mat4 model;
 
-out vec2 texCoord;
+//out vec2 texCoord;
+
+out vec4 clipSpace;
 
 //out vec3 fragPos;
 
@@ -23,11 +25,13 @@ void main()
 {
     vec4 worldPosition = modelview*vec4(position,1.0);
     
+    clipSpace = projection * worldPosition;
+    
     //Tell opengl to clip things
     gl_ClipDistance[0] = dot(worldPosition,plane);
     
     // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
-    gl_Position = projection * worldPosition;
-    texCoord = vec2(position.x/2 + .5, position.y/2 + .5);
+    gl_Position = clipSpace;
+    //texCoord = vec2(position.x/2 + .5, position.y/2 + .5);
     
 }

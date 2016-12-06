@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 100.0f, -70.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 0.0f, -70.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -69,6 +69,10 @@ glm::mat4 water_m(1.0f);
 
 // FBOS
 FBO * waterFBO;
+//location of textures in shader
+GLuint loc_reflection, loc_refraction;
+
+Water* water2;
 
 void Window::initialize_objects()
 {
@@ -95,12 +99,19 @@ void Window::initialize_objects()
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
     tr->update();
 
+    //Create the water FBO
     waterFBO = new FBO();
-    
+    glUseProgram(waterProgram);
     water = new Water(waterProgram);
-    water->createFrameBuffer();
-    water->getLocations();
-    water->connectTex();
+    water2 = new Water(waterProgram);
+//    water->createFrameBuffer();
+//    water->getLocations();
+//    water->connectTex();
+    //Get the locations
+    loc_reflection = glGetUniformLocation(waterProgram, "reflectionTex");
+    loc_refraction = glGetUniformLocation(waterProgram, "refractionTex");
+    
+    
     
     //For terrain
     trn *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
@@ -194,63 +205,108 @@ void Window::resize_callback(GLFWwindow * window, int width, int height)
     }
 }
 
+void Window::invertPitch(){
+    float pitch = glm::asin(cam_look_at.y);
+    float yaw = glm::acos(cam_look_at.x/glm::cos(pitch));
+//    std::cout << pitch << " : P\n";
+//    std::cout << yaw << " : Y\n";
+    float invertPitch = -pitch;
+    
+    cam_look_at.x = glm::cos(invertPitch)*glm::cos(yaw);
+    cam_look_at.y = glm::sin(invertPitch);
+    cam_look_at.z = glm::cos(invertPitch)*glm::sin(yaw);
+}
+
 void Window::drawSkybox(){
     // Skybox
     glUseProgram(skyShaderProgram);
+//    V = glm::mat4(glm::mat3(Window::V));
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_BACK);
+//    glCullFace(GL_BACK);
     glFrontFace(GL_CW);
     glDepthMask(GL_FALSE);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     glBindVertexArray(skybox->getVAO());
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1i(glGetUniformLocation(skyShaderProgram, "skybox"), 0);
     glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
     skybox->draw(skyShaderProgram);
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    glDepthMask(GL_TRUE);
-    // Set things back to normal
-    glFrontFace(GL_CCW);
-    glCullFace(GL_BACK);
-    glDepthMask(GL_TRUE);
+//    glBindVertexArray(0);
+//    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+//    glDepthMask(GL_TRUE);
+//  Set things back to normal
+//    glFrontFace(GL_CCW);
+//    glCullFace(GL_BACK);
+//    glDepthMask(GL_TRUE);
+    glDisable(GL_CULL_FACE);
 }
 
 void Window::drawObjects(){
+    drawSkybox();
+    
+    glUseProgram(shaderProgram);
     tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
 }
 void Window::drawReflection(){
     //Render everything above water (reflection)
     glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
-    //gotta move camera down 2*distance_to_water 70 - (-140) = 210*2 = 420 ayyy
-    float distance = 2*(cam_pos.y + 140);
+    //gotta move camera down 2*distance_to_water -70 - (-140) = 70*2 = 210 ayyy
+    float distance = 2*(70);
     cam_pos.y -= distance;
-    water->bindFrameBuffer(water->getReflectionFBO(), Window::width, Window::height);
+    invertPitch();
+    
+    waterFBO->bind(waterFBO->getReflectionFBO());
+    
+    //Clear colors
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    //Draw things here <<<<<<<<
+    drawObjects();
+
+    //Move camera back
+    invertPitch();
+    cam_pos.y += distance;
+    
+    waterFBO->unbind();
+    
+}
+void Window::drawRefraction(){
+    glUniform4f(clipPlaneW, 0.0f, -1.0f, 0.0f, -140.0f);
+    waterFBO->bind(waterFBO->getRefractionFBO());
+    //Clear colors
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     //Draw things here <<<<<<<<
     drawObjects();
     
-    //Move camera back
-    cam_pos.y += distance;
-}
-void Window::drawRefraction(){
-    glUniform4f(clipPlaneW, 0.0f, -1.0f, 0.0f, 140.0f);
-    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
-    //Draw things here <<<<<<<<
-    drawObjects();
 }
 
 void Window::drawAll(){
-    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
+    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f, 0.0f);
     glUseProgram(waterProgram);
-    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
-    water->unbindFrameBuffer();
-    glUseProgram(shaderProgram);
+    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 0.0f);
+    waterFBO->unbind();
     
     //Draw things here <<<<<<<<
     drawObjects();
+
 }
 
 void Window::drawWater(){
     glUseProgram(waterProgram);
+    
+    //Connect the texture units
+    glUniform1i(loc_reflection, 4); //texunit 4 REFLECTION
+    glUniform1i(loc_refraction, 5); //texunit 5 REFRADTION
+    
+    //Bind vertex array for the water
+    glBindVertexArray(water->getVAO());
+    glEnableVertexAttribArray(0);
+    glEnable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, waterFBO->getReflTex());
+    glActiveTexture(GL_TEXTURE5);
+    glBindTexture(GL_TEXTURE_2D, waterFBO->getRefrTex());
+    
     glDisable(GL_CULL_FACE);
     water->draw(water_m);
 }
@@ -258,7 +314,7 @@ void Window::drawWater(){
 void Window::display_callback(GLFWwindow * window)
 {
     tr_counter += 1;
-
+    
     // Clear the color and depth buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // Set the matrix mode to GL_MODELVIEW
@@ -270,7 +326,7 @@ void Window::display_callback(GLFWwindow * window)
         tr->update();
     //Draw reflecions
     drawReflection();
-
+    
     //Render everything below water (refraction)
     drawRefraction();
     
@@ -279,7 +335,7 @@ void Window::display_callback(GLFWwindow * window)
 
     //Draw the water
     drawWater();
-
+    
     // Gets events, including input such as keyboard and mouse or window resizinh
     glfwPollEvents();
     // Swap buffers
@@ -306,7 +362,7 @@ void Window::scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
 
     } else {
         // pos y offset is to zoom in
-        cam_pos = cam_pos - glm::vec3(0,0,0.5);
+        cam_pos = cam_pos - glm::vec3(0,0,-0.5);
         V = glm::lookAt(cam_pos, cam_look_at, cam_up);
     }
 }

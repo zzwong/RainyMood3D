@@ -7,14 +7,20 @@ layout (location = 0) out vec4 color;
 uniform sampler2D reflectionTex;
 uniform sampler2D refractionTex;
 
-in vec2 texCoord;
+in vec4 clipSpace;
 
+//in vec2 texCoord;
 
 void main()
 {
-    vec4 reflectColor = texture(reflectionTex, texCoord);
-    vec4 refractionColor = texture(refractionTex, texCoord);
-    // Color everything a hot blue color. An alpha of 1.0f means it is not transparent.
+    vec2 ndc = (clipSpace.xy/clipSpace.w)/2.0f + 0.5f;
+    vec2 refractTexCoord = vec2(ndc.x,ndc.y);
+    vec2 reflectTexCoord = vec2(ndc.x,-ndc.y);
+    
+    vec4 reflectColor = texture(reflectionTex, reflectTexCoord);
+    vec4 refractionColor = texture(refractionTex, refractTexCoord);
     //color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
-    color = mix(reflectColor, refractionColor, 0.5);
+    color = mix(reflectColor, refractionColor, .5f);
+    //color = reflectColor;
+    //color = refractionColor;
 }

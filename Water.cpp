@@ -60,8 +60,6 @@ void Water::draw(glm::mat4 C){
     //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     
     glBindVertexArray(0);
-    
-    
 }
 
 void Water::createFrameBuffer(){
@@ -148,3 +146,7 @@ void Water::connectTex(){
 }
 
 void Water::update(){}
+
+GLuint Water::getVAO(){
+    return VAO;
+}
