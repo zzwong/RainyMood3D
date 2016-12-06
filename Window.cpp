@@ -271,7 +271,7 @@ void Window::drawReflection(){
     
 }
 void Window::drawRefraction(){
-    glUniform4f(clipPlaneW, 0.0f, -1.0f, 0.0f, -140.0f);
+    glUniform4f(clipPlaneN, 0.0f, -1.0f, 0.0f, 140.0f);
     waterFBO->bind(waterFBO->getRefractionFBO());
     //Clear colors
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
