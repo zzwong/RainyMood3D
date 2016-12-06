@@ -1,3 +1,5 @@
+
+
 #include <stdio.h>
 #include "Terrain.h"
 #include "Window.h"
@@ -15,6 +17,7 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     scale = scl;
     noise_gen = new FastNoise(3);
     
+    std::cout << "cols: " << cols << "rows: "<< rows << " widthxheight "<<width<< " "<<height<<std::endl;
     
     update(); // Generate the height map at time of 0
     
@@ -36,12 +39,45 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     glBindVertexArray(0);
 }
 
-Terrain::Terrain(GLuint shader, const char* heightmap, int scl){
+
+/**
+ * Constructor for loading terrain from image file. Currently takes in a PPM file as input.
+ * Populates the heightmap vertices.
+ */
+Terrain::Terrain(GLuint shader, const char* filename, int scl){
     this->shaderProgram = shader;
-    hmap = TextureHandler::loadPPM(heightmap, width, height);
-    cols = width / scl;
-    rows = height / scl;
+    hmap = TextureHandler::loadPPM(filename, width, height);
+    cols = width;// / scl;
+    rows = height;// / scl;
     scale = scl;
+    
+    // Turn a buffer (unsigned char*) of height values to 2D heightmap (terr[x][y])
+    for( int row = 0; row < height; row++){
+        for (int col = 0; col < width; col++){
+//            std::cout << hmap[(row*width + col) * 3] << " " << hmap[(row*width + col) *3+1] << " " << hmap[(row*width + col)*3+2] << std::endl;
+            terrain[row][col] = (float) hmap[(row*width + col)*3] + 100;
+//            std::cout << terrain[row][col] << std::endl;
+        }
+    }
+    bool flip = true;
+    for(int y = 0; y < rows-1; y++){
+        if (flip){
+            for(int x = 0; x < cols; x++){
+                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+            }
+            flip = !flip;
+        } else {
+            for(int x = cols; x >= 0; x--){
+                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+            }
+            flip = !flip;
+        }
+    }
+    
+    std::cout << "number of vertices..." << vertices.size() << std::endl;
+    std::cout << "cols: " << cols << "rows: "<< rows << " widthxheight "<<width<< " "<<height<<std::endl;
     
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -50,7 +86,7 @@ Terrain::Terrain(GLuint shader, const char* heightmap, int scl){
     glBindVertexArray(VAO);
     
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(heightmap), heightmap, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) * vertices.size(), vertices.data(), GL_STATIC_DRAW);
     
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (GLvoid*)0);
@@ -61,6 +97,7 @@ Terrain::Terrain(GLuint shader, const char* heightmap, int scl){
 }
 
 Terrain::~Terrain(){
+    vertices.clear();
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);

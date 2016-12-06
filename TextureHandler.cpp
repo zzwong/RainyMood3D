@@ -45,9 +45,12 @@ unsigned char* TextureHandler::loadPPM(const char* filename, int& width, int& he
         retval_fgets=fgets(buf[0], BUFSIZE, fp);
     } while (buf[0][0] == '#');
     
+    
     // Read image data:
     rawData = new unsigned char[width * height * 3];
     read = fread(rawData, width * height * 3, 1, fp);
+
+    
     fclose(fp);
     if (read != 1)
     {

@@ -50,18 +50,23 @@ int mode = 0;
 ISoundEngine* engine;
 #define SPLOSION "explosion.wav"
 
-//Pause the terrain
-bool pause_key = false;
-
-// San Diego Height Map
-#define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
-
 
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;
 SkyBox * skybox;
 
+// Terrain
 Terrain * tr;
+Terrain * hm; // height map...
+
+// Heightmaps
+#define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
+#define SIMPLE_HEIGHT_MAP "fft-terrain.ppm"
+#define SMALL_H_MAP "44-terrain.ppm"
+
+//Pause the terrain
+bool pause_key = false;
+
 glm::mat4 trn(1.0f);
 
 Water * water;
@@ -81,6 +86,7 @@ void Window::initialize_objects()
     faces.push_back("2dn.ppm");
     faces.push_back("2bk.ppm");
     faces.push_back("2ft.ppm");
+
     cubeMapTexture = TextureHandler::loadCubemap(faces);
     
     // initialize
@@ -91,6 +97,8 @@ void Window::initialize_objects()
 
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
     tr->update();
+    
+    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
 
     water = new Water(waterProgram);
     water->createFrameBuffer();
@@ -115,6 +123,7 @@ void Window::clean_up()
     delete(skybox);
     delete(cube);
     delete(tr);
+    delete(hm);
     engine->drop();
     glDeleteProgram(shaderProgram);
     glDeleteProgram(skyShaderProgram);
@@ -231,8 +240,8 @@ void Window::display_callback(GLFWwindow * window)
     cam_pos.y -= distance;
     water->bindFrameBuffer(water->getReflectionFBO(), width, height);
     
-    tr->draw(trn);
-    cube->draw(glm::mat4(1.0f));
+//    tr->draw(trn);
+//    cube->draw(glm::mat4(1.0f));
     
     //Move camera back
     cam_pos.y += distance;
@@ -242,7 +251,7 @@ void Window::display_callback(GLFWwindow * window)
     glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
     water->bindFrameBuffer(water->getRefractionFBO(), width, height);
     
-    tr->draw(trn);
+//    tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
     
     //Render everything
@@ -252,6 +261,7 @@ void Window::display_callback(GLFWwindow * window)
     water->unbindFrameBuffer();
     glUseProgram(shaderProgram);
     tr->draw(trn);
+//    hm->draw(trn);
     cube->draw(glm::mat4(1.0f));
 
     //Draw the water
