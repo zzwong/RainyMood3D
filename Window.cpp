@@ -214,6 +214,47 @@ void Window::drawSkybox(){
     glDepthMask(GL_TRUE);
 }
 
+void Window::drawObjects(){
+    tr->draw(trn);
+    cube->draw(glm::mat4(1.0f));
+}
+void Window::drawReflection(){
+    //Render everything above water (reflection)
+    glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
+    //gotta move camera down 2*distance_to_water 70 - (-140) = 210*2 = 420 ayyy
+    float distance = 2*(cam_pos.y + 140);
+    cam_pos.y -= distance;
+    water->bindFrameBuffer(water->getReflectionFBO(), Window::width, Window::height);
+    //Draw things here <<<<<<<<
+    drawObjects();
+    
+    //Move camera back
+    cam_pos.y += distance;
+}
+void Window::drawRefraction(){
+    glUniform4f(clipPlaneW, 0.0f, -1.0f, 0.0f, 140.0f);
+    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
+    //Draw things here <<<<<<<<
+    drawObjects();
+}
+
+void Window::drawAll(){
+    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
+    glUseProgram(waterProgram);
+    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
+    water->unbindFrameBuffer();
+    glUseProgram(shaderProgram);
+    
+    //Draw things here <<<<<<<<
+    drawObjects();
+}
+
+void Window::drawWater(){
+    glUseProgram(waterProgram);
+    glDisable(GL_CULL_FACE);
+    water->draw(water_m);
+}
+
 void Window::display_callback(GLFWwindow * window)
 {
     tr_counter += 1;
@@ -223,48 +264,21 @@ void Window::display_callback(GLFWwindow * window)
     // Set the matrix mode to GL_MODELVIEW
     drawSkybox();
     
-    
     glUseProgram(shaderProgram);
 
-//  if (tr_counter % 5 == 0)
     if(!pause_key)
         tr->update();
-
-    //Render everything above water (reflection)
-    glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
-    //gotta move camera down 2*distance_to_water 70 - (-140) = 210*2 = 420 ayyy
-    float distance = 2*(cam_pos.y + 140);
-    cam_pos.y -= distance;
-    water->bindFrameBuffer(water->getReflectionFBO(), width, height);
-    //Draw things here <<<<<<<<
-    tr->draw(trn);
-    cube->draw(glm::mat4(1.0f));
-    
-    //Move camera back
-    cam_pos.y += distance;
+    //Draw reflecions
+    drawReflection();
 
     //Render everything below water (refraction)
-    glUniform4f(clipPlaneW, 0.0f, -1.0f, 0.0f, 140.0f);
-    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
-    //Draw things here <<<<<<<<
-    tr->draw(trn);
-    cube->draw(glm::mat4(1.0f));
+    drawRefraction();
     
     //Render everything
-    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
-    glUseProgram(waterProgram);
-    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
-    water->unbindFrameBuffer();
-    glUseProgram(shaderProgram);
-    
-    //Draw things here <<<<<<<<
-    tr->draw(trn);
-    cube->draw(glm::mat4(1.0f));
+    drawAll();
 
     //Draw the water
-    glUseProgram(waterProgram);
-    glDisable(GL_CULL_FACE);
-    water->draw(water_m);
+    drawWater();
 
     // Gets events, including input such as keyboard and mouse or window resizinh
     glfwPollEvents();

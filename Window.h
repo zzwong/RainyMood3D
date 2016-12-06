@@ -74,7 +74,13 @@ public:
     static void point_callback(GLFWwindow* window);
     static void mouse_move_callback(GLFWwindow*, double, double);
     static void drawSkybox();
+    static void drawObjects();
+    static void drawReflection();
+    static void drawRefraction();
+    static void drawAll();
+    static void drawWater();
 };
+
 
 
 #endif
