@@ -20,7 +20,7 @@ out vec3 toCameraVector;
 out vec3 fromLightVector;
 
 uniform vec4 plane;
-uniform vec3 lightPosition = vec3(0.0f, 0.0f, -70.0f);
+uniform vec3 lightPosition = vec3(100.0f, 40.0f, -100.0f);
 
 const float tiling = 6.0f;
 

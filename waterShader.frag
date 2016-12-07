@@ -11,7 +11,7 @@ uniform sampler2D normalMap;
 uniform sampler2D depthMap;
 
 
-uniform vec3 lightColor = vec3(0.8f,0.1f,0.5f);
+uniform vec3 lightColor = vec3(1.f,1.f,1.f);
 
 in vec4 clipSpace;
 in vec2 texCoord;
@@ -20,7 +20,7 @@ in vec3 fromLightVector;
 
 uniform float moveFactor;
 
-const float waveStrength = 0.02f;
+const float waveStrength = 0.015f;
 const float shineDamper = 20.0f; //shinedamper
 const float reflectivity = 1.0f; //reflectivity
 
@@ -42,9 +42,9 @@ void main()
     float waterDepth = floorDistance - waterDistance;
     
     //Distortion from dudv map
-    vec2 distortedTexCoords = texture(dudvMap, vec2(texCoord.x + moveFactor,texCoord.y)).rg* 0.1f;
-    distortedTexCoords = texCoord + vec2(distortedTexCoords.x, distortedTexCoords.y + moveFactor);
-    vec2 totalDistortion = (texture(dudvMap, distortedTexCoords).rg * 2.0f - 1.0f) * waveStrength * clamp(waterDepth/20.0f,0.0,1.0f);
+    vec2 distortedTexCoords = texture(dudvMap, vec2(ndc.x + moveFactor, ndc.y)).rg * 0.1f;
+    distortedTexCoords = ndc + vec2(distortedTexCoords.x, distortedTexCoords.y + moveFactor);
+    vec2 totalDistortion = (texture(dudvMap, distortedTexCoords).rg * 2.0f - 1.0f) * waveStrength * clamp(waterDepth/5.0f,0.0,1.0f);
     
     refractTexCoord += totalDistortion;
     refractTexCoord = clamp(refractTexCoord, 0.001f, 0.999f);
@@ -57,13 +57,12 @@ void main()
     vec4 refractionColor = texture(refractionTex, refractTexCoord);
     
     vec4 normalMapColor = texture(normalMap,distortedTexCoords);
-    vec3 normal = vec3(normalMapColor.r * 2.0f - 1.0f, normalMapColor.g * 3.0f, normalMapColor.b * 2.0f - 1.0f);
+    vec3 normal = vec3(normalMapColor.r * 2.0f - 1.0f, normalMapColor.b * 3.0f, normalMapColor.g * 2.0f - 1.0f);
     normal = normalize(normal);
     
     vec3 viewVector = normalize(toCameraVector);
     float refractiveFactor = dot(viewVector, normal);
-    refractiveFactor = pow(refractiveFactor, 1.0f);
-    
+    refractiveFactor = pow(refractiveFactor, .5f);
     
     vec3 reflectedLight = reflect(normalize(fromLightVector),normal);
     float spec = max(dot(reflectedLight,viewVector),0.0f);
@@ -72,7 +71,7 @@ void main()
 
     color = mix(reflectColor, refractionColor, refractiveFactor);
     color = mix(color, vec4(0.0f,0.3f,0.5f,1.0f),0.2f) + vec4(specHighlight,1.0f);
-    color.a = clamp(waterDepth/100.0f,0.0,1.0f);
+    color.a = clamp(waterDepth/10.0f,0.0,1.0f);
 //    color = vec4(waterDepth)/50.0f;
 //    color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
 //    color = reflectColor;
