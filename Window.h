@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <iostream>
-#include <ctime>
+#include <time.h>
 
 #include "glm/gtc/matrix_access.hpp"
 #include "glm/ext.hpp"
@@ -45,6 +45,7 @@
 #include "Water.h"
 
 #include "FBO.h"
+#include "ParticleGen.h"
 
 #include <irrKlang.h>
 

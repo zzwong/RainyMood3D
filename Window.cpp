@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 0.0f, -70.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -15,6 +15,7 @@ glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 GLint shaderProgram;
 GLint skyShaderProgram;
 GLint waterProgram;
+GLint particleProgram;
 GLuint clipPlaneW, clipPlaneN;
 
 // Texture
@@ -32,6 +33,8 @@ int rightMouseDown;
 #define SKYBOX_F_SHADER_PATH "../skyboxShader.frag"
 #define W_V_SHADER_PATH "../waterShader.vert"
 #define W_F_SHADER_PATH "../waterShader.frag"
+#define P_SHADER_V "../particleShader.vert"
+#define P_SHADER_F "../particleShader.frag"
 
 // Camera movement
 glm::vec3 lastPoint;
@@ -59,12 +62,9 @@ bool pause_key = false;
 // dudvMap path
 #define DU_DV_MAP "waterdudv.ppm"
 #define NORMAL_MAP "waternormal.ppm"
-float WAVE_SPEED = 0.12f;
+float WAVE_SPEED = 0.00375f;
 float move_factor = 0.0f;
 
-time_t b_frame = 0.0f;
-time_t e_frame = 0.0f;
-time_t d_frame = 0.0f;
 
 // Testing Shapes >>>>>>>>> <<< >< ><> <> <>< > ><><><><>
 Cube * cube;
@@ -91,7 +91,11 @@ GLuint loc_reflection, loc_refraction, loc_dudv, loc_move_factor, loc_cam_pos, l
 //Location of textures
 GLuint dudvTex, normalTex;
 
-Water* water2;
+//Time
+clock_t timer;
+double delta_time;
+
+ParticleGen * generator;
 
 void Window::initialize_objects()
 {
@@ -99,6 +103,10 @@ void Window::initialize_objects()
     shaderProgram = LoadShaders(V_SHADER_PATH, F_SHADER_PATH);
     skyShaderProgram = LoadShaders(SKYBOX_V_SHADER_PATH, SKYBOX_F_SHADER_PATH);
     waterProgram = LoadShaders(W_V_SHADER_PATH, W_F_SHADER_PATH);
+    particleProgram = LoadShaders(P_SHADER_V, P_SHADER_F);
+    
+    //Particles
+    generator = new ParticleGen(1500, 0, particleProgram);
 
     // Textures
     faces.push_back("2rt.ppm");
@@ -117,7 +125,7 @@ void Window::initialize_objects()
     cube = new Cube(shaderProgram);
 
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
-    tr->update();
+//    tr->update();
     
     hm = new Terrain(shaderProgram, SD_HEIGHT_MAP, 10);
 
@@ -125,7 +133,6 @@ void Window::initialize_objects()
     waterFBO = new FBO();
     glUseProgram(waterProgram);
     water = new Water(waterProgram);
-    water2 = new Water(waterProgram);
     //Get the locations
     loc_reflection = glGetUniformLocation(waterProgram, "reflectionTex");
     loc_refraction = glGetUniformLocation(waterProgram, "refractionTex");
@@ -159,12 +166,12 @@ void Window::initialize_objects()
     
     
     //For terrain
-    trn *= glm::rotate(glm::mat4(1.0f), glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
-    trn *= glm::translate(glm::mat4(1.0f), glm::vec3(-500.0f, -500.0f, 225.0f));
+    trn = glm::rotate(trn, glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
+    trn = glm::translate(trn, glm::vec3(-550.0f, -550.0f, -110.0f));
    
     //For water
-    water_m *= glm::scale(glm::mat4(1.0f), glm::vec3(30, 1, 30));
-    water_m *= glm::translate(glm::mat4(1.0f), glm::vec3(0, -140, 0));
+    water_m = glm::scale(water_m, glm::vec3(3.0f, 3.0f, 3.0f));
+    water_m = glm::translate(water_m, glm::vec3(.0f, .0f, .0f));
     
     clipPlaneW = glGetUniformLocation(waterProgram, "plane");
     clipPlaneN = glGetUniformLocation(shaderProgram, "plane");
@@ -233,10 +240,8 @@ GLFWwindow* Window::create_window(int width, int height)
 void Window::idle_callback(GLFWwindow* window)
 {
     cube->update();
+    generator->update(delta_time, 50);
     
-    //Get time (end)
-    e_frame = time(NULL);
-    d_frame = b_frame - e_frame;
 }
 
 void Window::resize_callback(GLFWwindow * window, int width, int height)
@@ -258,13 +263,16 @@ void Window::resize_callback(GLFWwindow * window, int width, int height)
 void Window::invertPitch(){
     float pitch = glm::asin(cam_look_at.y);
     float yaw = glm::acos(cam_look_at.x/glm::cos(pitch));
-//    std::cout << pitch << " : P\n";
-//    std::cout << yaw << " : Y\n";
     float invertPitch = -pitch;
     
     cam_look_at.x = glm::cos(invertPitch)*glm::cos(yaw);
     cam_look_at.y = glm::sin(invertPitch);
     cam_look_at.z = glm::cos(invertPitch)*glm::sin(yaw);
+    
+    //SWAP Y AND Z MAYBE?
+    //cam_look_at.y = glm::cos(invertPitch)*glm::sin(yaw);
+    //cam_look_at.z = glm::sin(invertPitch);
+
 }
 
 void Window::drawSkybox(){
@@ -301,11 +309,11 @@ void Window::drawObjects(){
 }
 void Window::drawReflection(){
     //Render everything above water (reflection)
-//    glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
+    glUniform4f(clipPlaneN, 0.0f,0.0f,1.0f,0.1f);
     
-    //gotta move camera down 2*distance_to_water -70 - (-140) = 70*2 = 210 ayyy
-    float distance = 2*(70);
-    cam_pos.y -= distance;
+    //gotta move camera down 2*distance_to_water
+    float distance = 2*(100);
+    cam_pos.z += distance; //-Z IS UP / +Z IS DOWN
     invertPitch();
     
     waterFBO->bind(waterFBO->getReflectionFBO());
@@ -317,10 +325,10 @@ void Window::drawReflection(){
 
     //Move camera back
     invertPitch();
-    cam_pos.y += distance;
+    cam_pos.z -= distance;
 }
 void Window::drawRefraction(){
-    glUniform4f(clipPlaneN, 0.0f, -1.0f, 0.0f, 140.0f);
+    glUniform4f(clipPlaneN, 0.0f, 0.0f, -1.0f, 0.0f);
     waterFBO->bind(waterFBO->getRefractionFBO());
     //Clear colors
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -360,10 +368,10 @@ void Window::drawAll(){
 
 void Window::drawWater(){
     glUseProgram(waterProgram);
-    //Move the waves
-    move_factor += (WAVE_SPEED*d_frame)+1.000005f;
-    move_factor = fmod(move_factor, 20.0f);
-    glUniform1f(loc_move_factor, move_factor);
+//    //Move the waves
+//    move_factor += (WAVE_SPEED*delta_time);
+//    move_factor = fmod(move_factor, 1.0f);
+//    glUniform1f(loc_move_factor, move_factor);
     
     //Send camera position
     glUniform3f(loc_cam_pos, cam_pos.x, cam_pos.y, cam_pos.z);
@@ -390,17 +398,28 @@ void Window::drawWater(){
     glActiveTexture(GL_TEXTURE8);
     glBindTexture(GL_TEXTURE_2D, waterFBO->getRefrDepth());
     
-    
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glDisable(GL_CULL_FACE);
-    //water->draw(water_m);
+    water->draw(water_m);
+    
+    glDisable(GL_BLEND);
 }
 
 void Window::display_callback(GLFWwindow * window)
 {
     tr_counter += 1;
 
-    //Get time (seconds)
-    b_frame = time(NULL);
+    //Get time (seconds) (start)
+    timer = clock();
+    
+    generator->draw(glm::mat4(1.0f));
+    glUseProgram(waterProgram);
+    //Move the waves
+    move_factor += (WAVE_SPEED*delta_time);
+    move_factor = fmod(move_factor, 1.0f);
+    glUniform1f(loc_move_factor, move_factor);
     
     // Clear the color and depth buffers
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -410,7 +429,7 @@ void Window::display_callback(GLFWwindow * window)
     glUseProgram(shaderProgram);
 
     if(!pause_key)
-        tr->update();
+//        tr->update();
     //Draw reflecions
     drawReflection();
     
@@ -427,6 +446,11 @@ void Window::display_callback(GLFWwindow * window)
     glfwPollEvents();
     // Swap buffers
     glfwSwapBuffers(window);
+    
+    //Get time (seconds) end
+    timer = clock() - timer;
+    delta_time = (float)timer/CLOCKS_PER_SEC;
+//    std::cout << "clock ticks = " << delta_time <<"\n";
     
 }
 
@@ -495,8 +519,12 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         if (key == GLFW_KEY_P){
             pause_key = !pause_key;
         }
-        if (key == GLFW_KEY_Y){
+        if (key == GLFW_KEY_Y && mods == 0){
             trn = glm::translate(trn, glm::vec3(0.0f,0.0f,-5.0f));
+            std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
+        }
+        if (key == GLFW_KEY_Y && mods == GLFW_MOD_SHIFT){
+            trn = glm::translate(trn, glm::vec3(0.0f,0.0f,5.0f));
             std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
         }
     }
