@@ -22,7 +22,7 @@ uniform float moveFactor;
 
 const float waveStrength = 0.015f;
 const float shineDamper = 20.0f; //shinedamper
-const float reflectivity = 0.6f; //reflectivity
+const float reflectivity = 1.0f; //reflectivity
 
 void main()
 {

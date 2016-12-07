@@ -13,12 +13,23 @@ uniform mat4 projection;
 uniform mat4 modelview;
 uniform mat4 model;
 
+uniform float TERRAIN_WIDTH;
+
 //out vec3 fragPos;
+out vec2 TexCoord;
+out vec3 Normal;
+out vec3 FragPos;
+
 
 void main()
 {
     // OpenGL maintains the D matrix so you only need to multiply by P, V (aka C inverse), and M
-    gl_Position = projection * modelview * vec4(position.x, position.y, position.z, 1.0);
+//    gl_Position = projection * modelview * vec4(position.x, position.y, position.z, 1.0);
+    vec4 worldPosition = modelview * vec4(position, 1.0);
+    gl_Position = projection * worldPosition;
+    
+    FragPos = vec3(model * vec4(position, 1.0f));
     //fragPos = vec3(model * vec4(position, 1.0f));
+    TexCoord = position.xy / TERRAIN_WIDTH;
     
 }
