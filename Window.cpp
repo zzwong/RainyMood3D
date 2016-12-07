@@ -362,7 +362,7 @@ void Window::drawWater(){
     glUseProgram(waterProgram);
     //Move the waves
     move_factor += (WAVE_SPEED*d_frame)+1.000005f;
-    move_factor = fmod(move_factor, 1.0f);
+    move_factor = fmod(move_factor, 20.0f);
     glUniform1f(loc_move_factor, move_factor);
     
     //Send camera position
