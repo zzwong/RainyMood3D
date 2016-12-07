@@ -15,6 +15,7 @@ glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 GLint shaderProgram;
 GLint skyShaderProgram;
 GLint waterProgram;
+GLint terrainProgram;
 GLuint clipPlaneW, clipPlaneN;
 
 // Texture
@@ -32,6 +33,8 @@ int rightMouseDown;
 #define SKYBOX_F_SHADER_PATH "../skyboxShader.frag"
 #define W_V_SHADER_PATH "../waterShader.vert"
 #define W_F_SHADER_PATH "../waterShader.frag"
+#define T_V_SHADER_PATH "../terrain.vert"
+#define T_F_SHADER_PATH "../terrain.frag"
 
 // Camera movement
 glm::vec3 lastPoint;
@@ -72,14 +75,19 @@ SkyBox * skybox;
 
 // Terrain
 Terrain * tr;
+glm::mat4 trn(1.0f);   // Used for calculating terrain id->matrix
 Terrain * hm; // height map...
 
 // Heightmaps
-#define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
 #define SIMPLE_HEIGHT_MAP "fft-terrain.ppm"
 
-
-glm::mat4 trn(1.0f);
+// Terrain Textures
+#define GRASS "grass.ppm"
+#define SNOW "snow.ppm"
+#define ROCKS "rocks.ppm"
+#define FIELDS "fields.ppm"
+GLuint grassTex, snowTex, rockTex, fieldsTex;
+GLuint loc_grass, loc_snow, loc_rock, loc_fields;
 
 Water * water;
 glm::mat4 water_m(1.0f);
@@ -99,15 +107,23 @@ void Window::initialize_objects()
     shaderProgram = LoadShaders(V_SHADER_PATH, F_SHADER_PATH);
     skyShaderProgram = LoadShaders(SKYBOX_V_SHADER_PATH, SKYBOX_F_SHADER_PATH);
     waterProgram = LoadShaders(W_V_SHADER_PATH, W_F_SHADER_PATH);
+    terrainProgram = LoadShaders(T_V_SHADER_PATH, T_F_SHADER_PATH);
 
     // Textures
-    faces.push_back("2rt.ppm");
-    faces.push_back("2lf.ppm");
-    faces.push_back("2up.ppm");
-    faces.push_back("2dn.ppm");
-    faces.push_back("2bk.ppm");
-    faces.push_back("2ft.ppm");
+//    faces.push_back("2rt.ppm");
+//    faces.push_back("2lf.ppm");
+//    faces.push_back("2up.ppm");
+//    faces.push_back("2dn.ppm");
+//    faces.push_back("2bk.ppm");
+//    faces.push_back("2ft.ppm");
 
+    faces.push_back("rt.ppm");
+    faces.push_back("lf.ppm");
+    faces.push_back("up.ppm");
+    faces.push_back("dn.ppm");
+    faces.push_back("bk.ppm");
+    faces.push_back("ft.ppm");
+    
     cubeMapTexture = TextureHandler::loadCubemap(faces);
     
     // initialize
@@ -117,15 +133,62 @@ void Window::initialize_objects()
     cube = new Cube(shaderProgram);
 
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
+//    tr = new Terrain(terrainProgram, 2000, 1600, 10);
     tr->update();
     
-    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
+    // Generate the terrain textures
+    glGenTextures(1, &grassTex);
+    glBindTexture(GL_TEXTURE_2D, grassTex);
+    int grassW, grassH;
+    unsigned char* grass_img = TextureHandler::loadPPM(GRASS, grassH, grassW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, grassW, grassH, 0, GL_RGBA, GL_UNSIGNED_BYTE, grass_img);
+    // Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glGenTextures(1, &snowTex);
+    glBindTexture(GL_TEXTURE_2D, snowTex);
+    int snowW, snowH;
+    unsigned char* snow_img = TextureHandler::loadPPM(SNOW, snowH, snowW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, snowW, snowH, 0, GL_RGBA, GL_UNSIGNED_BYTE, snow_img);
+    //Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glGenTextures(1, &rockTex);
+    glBindTexture(GL_TEXTURE_2D, rockTex);
+    int rockW, rockH;
+    unsigned char* rock_img = TextureHandler::loadPPM(ROCKS, rockH, rockW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, rock_img);
+    //Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    glGenTextures(1, &fieldsTex);
+    glBindTexture(GL_TEXTURE_2D, fieldsTex);
+    int fieldsW, fieldsH;
+    unsigned char* fields_img = TextureHandler::loadPPM(FIELDS, fieldsH, fieldsW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, fields_img);
+    //Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    
+    // Get the locations
+    loc_grass = glGetUniformLocation(terrainProgram, "grassTex");
+    loc_snow  = glGetUniformLocation(terrainProgram, "snowTex");
+    loc_rock  = glGetUniformLocation(terrainProgram, "snowTex");
+    loc_fields= glGetUniformLocation(terrainProgram, "fieldsTex");
+    
+    
+    // Done with terrain textures
+    
+//    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
 
     //Create the water FBO
     waterFBO = new FBO();
     glUseProgram(waterProgram);
     water = new Water(waterProgram);
-    water2 = new Water(waterProgram);
+//    water2 = new Water(waterProgram);
     //Get the locations
     loc_reflection = glGetUniformLocation(waterProgram, "reflectionTex");
     loc_refraction = glGetUniformLocation(waterProgram, "refractionTex");
@@ -181,6 +244,7 @@ void Window::clean_up()
     glDeleteProgram(shaderProgram);
     glDeleteProgram(skyShaderProgram);
     glDeleteProgram(waterProgram);      // no more drinkable water in LA
+    glDeleteProgram(terrainProgram);
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -295,7 +359,21 @@ void Window::drawObjects(){
     drawSkybox();
     
     glUseProgram(shaderProgram);
+//    glUseProgram(terrainProgram);
+    glEnable(GL_TEXTURE_2D);
+    glBindVertexArray(tr->getVAO());
+    glActiveTexture(GL_TEXTURE9);
+    glUniform1i(glGetUniformLocation(shaderProgram, "terrain"), 0);
+//    glUniform1i(glGetUniformLocation(terrainProgram, "terrain"), 9);
+    glBindTexture(GL_TEXTURE_2D, grassTex);
+    
     tr->draw(trn);
+    glBindVertexArray(0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    
+    
+    
+    
     cube->draw(glm::mat4(1.0f));
 }
 void Window::drawReflection(){
@@ -408,6 +486,7 @@ void Window::display_callback(GLFWwindow * window)
     drawSkybox();
     
     glUseProgram(shaderProgram);
+    
 
     if(!pause_key)
         tr->update();

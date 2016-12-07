@@ -76,7 +76,7 @@ Terrain::Terrain(GLuint shader, const char* filename, int scl){
     }
     
     std::cout << "number of vertices..." << vertices.size() << std::endl;
-    std::cout << "cols: " << cols << "rows: "<< rows << " widthxheight "<<width<< " "<<height<<std::endl;
+//    std::cout << "cols: " << cols << "rows: "<< rows << " widthxheight "<<width<< " "<<height<<std::endl;
     
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -111,6 +111,7 @@ void Terrain::draw(glm::mat4 C){
     glUniformMatrix4fv(uProjection, 1, GL_FALSE, &Window::P[0][0]);
     glUniformMatrix4fv(uModelview, 1, GL_FALSE, &modelview[0][0]);
     glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, &this->toWorld[0][0]);
+    glUniform1f(glGetUniformLocation(shaderProgram, "TERRAIN_WIDTH"), width);
     
     glBindVertexArray(VAO);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // Show lines
@@ -128,6 +129,10 @@ void Terrain::draw(glm::mat4 C){
     glBindVertexArray(0);
 }
 
+/**
+ * Maps a value that is in the range of istart to istop into the range of ostart to ostop
+ * Example: mapping .64 in range 0 to 1 to a value in -100 to 100
+ */
 float map(float val, float istart, float istop, float ostart, float ostop){
     return ostart + (ostop-ostart) * ((val - istart) / (istop - istart));
 }
@@ -146,8 +151,8 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-//            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
-            terrain[x][y] = map(noise_gen->GetGradientFractal(xoff, yoff), 0, 1, -100, 150);
+            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
+//            terrain[x][y] = map(noise_gen->GetGradientFractal(xoff, yoff), 0, 1, -100, 150);
             
 //            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;
             xoff += 1.5f;
@@ -178,3 +183,8 @@ void Terrain::update(){
     glBindVertexArray(0);
     
 }
+
+GLuint Terrain::getVAO(){
+    return VAO;
+}
+
