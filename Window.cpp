@@ -119,7 +119,7 @@ void Window::initialize_objects()
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
     tr->update();
     
-    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
+    hm = new Terrain(shaderProgram, SD_HEIGHT_MAP, 10);
 
     //Create the water FBO
     waterFBO = new FBO();
@@ -295,19 +295,19 @@ void Window::drawObjects(){
     drawSkybox();
     
     glUseProgram(shaderProgram);
-    tr->draw(trn);
+    hm->draw(trn);
+    //tr->draw(trn);
     cube->draw(glm::mat4(1.0f));
 }
 void Window::drawReflection(){
     //Render everything above water (reflection)
-    glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
+//    glUniform4f(clipPlaneN, 0.0f,1.0f,0.0f,-140.0f);
+    
     //gotta move camera down 2*distance_to_water -70 - (-140) = 70*2 = 210 ayyy
     float distance = 2*(70);
     cam_pos.y -= distance;
     invertPitch();
     
-//    tr->draw(trn);
-//    cube->draw(glm::mat4(1.0f));
     waterFBO->bind(waterFBO->getReflectionFBO());
     
     //Clear colors
@@ -392,7 +392,7 @@ void Window::drawWater(){
     
     
     glDisable(GL_CULL_FACE);
-    water->draw(water_m);
+    //water->draw(water_m);
 }
 
 void Window::display_callback(GLFWwindow * window)
@@ -476,6 +476,8 @@ void Window::mouse_move_callback(GLFWwindow* window, double xpos, double ypos){
     
 }
 
+int buttonPush = 0;
+
 void Window::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
  
@@ -492,6 +494,10 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         
         if (key == GLFW_KEY_P){
             pause_key = !pause_key;
+        }
+        if (key == GLFW_KEY_Y){
+            trn = glm::translate(trn, glm::vec3(0.0f,0.0f,-5.0f));
+            std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
         }
     }
 }
