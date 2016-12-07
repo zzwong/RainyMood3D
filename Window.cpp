@@ -414,7 +414,6 @@ void Window::display_callback(GLFWwindow * window)
     //Get time (seconds) (start)
     timer = clock();
     
-    generator->draw(glm::mat4(1.0f));
     glUseProgram(waterProgram);
     //Move the waves
     move_factor += (WAVE_SPEED*delta_time);
@@ -438,7 +437,7 @@ void Window::display_callback(GLFWwindow * window)
     
     //Render everything
     drawAll();
-
+    generator->draw(glm::mat4(1.0f));
     //Draw the water
     drawWater();
     
