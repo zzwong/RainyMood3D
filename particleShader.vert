@@ -15,8 +15,10 @@ uniform vec4 color;
 
 void main()
 {
-//    float scale = 10.0f;
+    float scale = 5.0f;
 //    TexCoords = vertex.zw;
     ParticleColor = color;
-    gl_Position = projection * modelview * vec4(position.xyz + partPos, 1.0f);
+//    gl_Position = projection * modelview * vec4(position.xyz / scale + partPos, 1.0f);
+    gl_Position = projection * modelview * vec4(position.x/scale+partPos.x,
+                                                position.y*scale+partPos.y, position.z/scale+partPos.z, 1.0f);
 }

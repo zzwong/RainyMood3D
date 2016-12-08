@@ -13,8 +13,9 @@
 #include "Geode.h"
 #include "Window.h"
 #include <random>
+#include <time.h>
 
-#define CLOUD_HEIGHT -100.0f
+#define CLOUD_HEIGHT 50.0f
 
 // Represents a single particle and its state
 struct Particle {
@@ -22,7 +23,7 @@ struct Particle {
     glm::vec4 Color;
     GLfloat Life;
     
-    Particle() : Position(glm::vec3(0.0f,0.0f, CLOUD_HEIGHT)), Velocity(0.0f), Color(1.0f), Life(0.0f) {    }
+    Particle() : Position(glm::vec3(0.0f,CLOUD_HEIGHT, 0.0f)), Velocity(0.0f), Color(1.0f), Life(0.0f) {    }
 };
 
 class ParticleGen : public Geode{

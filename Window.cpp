@@ -62,7 +62,8 @@ bool pause_key = false;
 // dudvMap path
 #define DU_DV_MAP "waterdudv.ppm"
 #define NORMAL_MAP "waternormal.ppm"
-float WAVE_SPEED = 0.00375f;
+//float WAVE_SPEED = 0.001875f;
+float WAVE_SPEED = 0.0009375f;
 float move_factor = 0.0f;
 
 
@@ -113,7 +114,7 @@ void Window::initialize_objects()
     particleProgram = LoadShaders(P_SHADER_V, P_SHADER_F);
     
     //Particles
-    generator = new ParticleGen(1500, 0, particleProgram);
+    generator = new ParticleGen(10000, 0, particleProgram);
 
     // Textures
 //    faces.push_back("2rt.ppm");
@@ -269,7 +270,7 @@ GLFWwindow* Window::create_window(int width, int height)
 void Window::idle_callback(GLFWwindow* window)
 {
     cube->update();
-    generator->update(delta_time, 50);
+    generator->update(delta_time, 200);
     
 }
 
@@ -330,7 +331,9 @@ void Window::drawSkybox(){
 
 void Window::drawObjects(){
     drawSkybox();
-    
+
+    generator->draw(glm::mat4(1.0f));
+
     glUseProgram(shaderProgram);
 //    glUniform1i(loc_fields, 9);
 //    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), true);
@@ -456,10 +459,9 @@ void Window::display_callback(GLFWwindow * window)
     //Get time (seconds) (start)
     timer = clock();
     
-    generator->draw(glm::mat4(1.0f));
     glUseProgram(waterProgram);
     //Move the waves
-    move_factor += (WAVE_SPEED*delta_time);
+    move_factor += (WAVE_SPEED*delta_time/16.0f);
     move_factor = fmod(move_factor, 1.0f);
     glUniform1f(loc_move_factor, move_factor);
     
@@ -481,7 +483,6 @@ void Window::display_callback(GLFWwindow * window)
     
     //Render everything
     drawAll();
-
     //Draw the water
     drawWater();
     
@@ -493,7 +494,6 @@ void Window::display_callback(GLFWwindow * window)
     //Get time (seconds) end
     timer = clock() - timer;
     delta_time = (float)timer/CLOCKS_PER_SEC;
-//    std::cout << "clock ticks = " << delta_time <<"\n";
     
 }
 
