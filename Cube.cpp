@@ -50,7 +50,7 @@ Cube::~Cube(){
 
 void Cube::draw(glm::mat4 C){
     
-//    this->toWorld = C;
+    this->toWorld = C;
     
     //Draw
     glm::mat4 modelview = Window::V * toWorld;

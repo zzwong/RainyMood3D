@@ -11,17 +11,17 @@ uniform sampler2D fieldsTex;
 
 uniform bool wire;
 uniform bool water;
+uniform int cube_color;
 
 void main()
 {
     // Color everything a hot blue color. An alpha of 1.0f means it is not transparent.
-//    color = vec4(1.0f, 0.0f, 1.0f, 1.0f);
-    vec3 norm = normalize(Normal);
-    vec3 viewDir = normalize(viewPos - FragPos);
-    if(wire)
-        color = vec4(0.0f, .5f, .5f, 1.0f);
-    else
-        color = vec4(.87f, .3f, 0.0f, 1.0f);
+    if (cube_color == 1){
+        color = vec4(1.0, 0.0, 0.0, 1.0);
+    } else if (cube_color == 2){
+        color = vec4(0.0, 0.0, 1.0, 1.0);
+    } else if (cube_color == 3){
+        color = vec4(0.0, 1.0, 0.0, 1.0);
+    }
     
-//    color = texture(grassTex, TexCoords);
 }

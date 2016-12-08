@@ -15,7 +15,7 @@ glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 GLint shaderProgram;
 GLint skyShaderProgram;
 GLint waterProgram;
-GLint terrainProgram;
+GLint cubeProgram;
 GLint particleProgram;
 GLint fullScreenShader;
 GLuint clipPlaneW, clipPlaneN;
@@ -35,8 +35,8 @@ int rightMouseDown;
 #define SKYBOX_F_SHADER_PATH "../skyboxShader.frag"
 #define W_V_SHADER_PATH "../waterShader.vert"
 #define W_F_SHADER_PATH "../waterShader.frag"
-#define T_V_SHADER_PATH "../terrain.vert"
-#define T_F_SHADER_PATH "../terrain.frag"
+#define C_V_SHADER_PATH "../cube.vert"
+#define C_F_SHADER_PATH "../cube.frag"
 #define P_SHADER_V "../particleShader.vert"
 #define P_SHADER_F "../particleShader.frag"
 #define FS_SHADER_V "../fullScreenShader.vert"
@@ -112,7 +112,7 @@ GLuint loc_reflection, loc_refraction, loc_dudv, loc_move_factor, loc_cam_pos, l
 GLuint dudvTex, normalTex;
 //Post processing locations
 GLuint loc_gauss, loc_neon;
-bool gauss_on = false, neon_on = false;
+bool gauss_on = false, neon_on = false, show_cubes = false;
 
 //Time
 clock_t timer;
@@ -137,7 +137,7 @@ void Window::initialize_objects()
     shaderProgram = LoadShaders(V_SHADER_PATH, F_SHADER_PATH);
     skyShaderProgram = LoadShaders(SKYBOX_V_SHADER_PATH, SKYBOX_F_SHADER_PATH);
     waterProgram = LoadShaders(W_V_SHADER_PATH, W_F_SHADER_PATH);
-    terrainProgram = LoadShaders(T_V_SHADER_PATH, T_F_SHADER_PATH);
+    cubeProgram = LoadShaders(C_V_SHADER_PATH, C_F_SHADER_PATH);
     particleProgram = LoadShaders(P_SHADER_V, P_SHADER_F);
     fullScreenShader = LoadShaders(FS_SHADER_V, FS_SHADER_F);
     
@@ -173,7 +173,7 @@ void Window::initialize_objects()
     engine->play2D(RAIN_1, true);
     
     skybox = new SkyBox();
-    cube = new Cube(shaderProgram);
+    cube = new Cube(cubeProgram);
 
     
     hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
@@ -260,7 +260,7 @@ void Window::clean_up()
     glDeleteProgram(shaderProgram);
     glDeleteProgram(skyShaderProgram);
     glDeleteProgram(waterProgram);      // no more drinkable water in LA
-    glDeleteProgram(terrainProgram);
+    glDeleteProgram(cubeProgram);
 }
 
 GLFWwindow* Window::create_window(int width, int height)
@@ -425,9 +425,21 @@ void Window::drawObjects(){
         hm->draw(hm_mat);
 //    glBindVertexArray(0);
 //    glBindTexture(GL_TEXTURE_2D, 0);
-    
-    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), false);
-    cube->draw(glm::mat4(1.0f));
+    glUseProgram(cubeProgram);
+    if (show_cubes){
+        glUniform1i(glGetUniformLocation(cubeProgram, "cube_color"), 1);
+        glm::mat4 cb_mat = glm::translate(glm::mat4(1.0f), glm::vec3(0, 10.0, 0));
+        cube->draw(cb_mat);
+        
+        glUniform1i(glGetUniformLocation(cubeProgram, "cube_color"), 2);
+        glm::mat4 cb1_mat = glm::translate(glm::mat4(1.0f), glm::vec3(10.0, 20.0, 0));
+        cube->draw(cb1_mat);
+        
+        glUniform1i(glGetUniformLocation(cubeProgram, "cube_color"), 3);
+        glm::mat4 cb2_mat = glm::translate(glm::mat4(1.0f), glm::vec3(-10.0, 30.0, 0));
+        cube->draw(cb2_mat);
+    }
+    glUseProgram(shaderProgram);
 }
 void Window::drawReflection(){
     //Render everything above water (reflection)
@@ -676,6 +688,10 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
 //        }
 //        
 //>>>>>>> 14ad8e24514fc53849d8b10095427afa12500312
+        
+        if (key == GLFW_KEY_C){
+            show_cubes = !show_cubes;
+        }
     }
 }
 
