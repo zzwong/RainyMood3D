@@ -65,12 +65,14 @@ GLuint ParticleGen::firstUnusedParticle(){
 }
 // Respawns particle
 void ParticleGen::respawnParticle(Particle &particle){
-    GLfloat random = ((rand() % 100) - 50) / 10.0f;
+//    srand((unsigned int)time(NULL));
+    GLfloat randomX = ((rand() % 200) - 100);
+    GLfloat randomZ = ((rand() & 200) - 100);
     GLfloat rColor = 0.5 + ((rand() % 100) / 100.0f);
-    particle.Position = glm::vec3(random, random, CLOUD_HEIGHT);//Randomize positions on the xy-plane, z should be same
-    particle.Color = glm::vec4(rColor, rColor, rColor, 1.0f); //randomic the color
-    particle.Life = 1.0f;
-    particle.Velocity = glm::vec3(0.0f,0.0f,.98f); //Velocity should be straight down always (try 1/10th of grav)
+    particle.Position = glm::vec3(randomX, CLOUD_HEIGHT, randomZ);//Randomize positions on the xy-plane, z should be same
+    particle.Color = glm::vec4(rColor, rColor, rColor, 1.0f); //randomize the color
+    particle.Life = 2.0f;
+    particle.Velocity = glm::vec3(0.0f,-100.0f,0.0f); //Velocity should be straight down always (try 1/10th of grav)
 }
 
 void ParticleGen::draw(glm::mat4 C){
