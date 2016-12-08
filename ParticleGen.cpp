@@ -99,10 +99,9 @@ void ParticleGen::draw(glm::mat4 C){
     {
         if (particle.Life > 0.0f)
         {
+            //Increment particles drawn
             Window::parts_drawn++;
-//            this->shader.SetVector2f("offset", particle.Position);
-//            this->shader.SetVector4f("color", particle.Color);
-//            this->texture.Bind();
+
             glUniform3f(glGetUniformLocation(shaderProgram, "partPos"), particle.Position.x, particle.Position.y, particle.Position.z);
             glUniform4f(glGetUniformLocation(shaderProgram, "color"), particle.Color.x,particle.Color.y,particle.Color.z,particle.Color.w);
             
