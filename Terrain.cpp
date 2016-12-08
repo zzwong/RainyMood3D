@@ -112,6 +112,7 @@ Terrain::~Terrain(){
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+    vertices = std::vector<glm::vec3>();
 }
 
 void Terrain::genTextures(){
@@ -210,7 +211,7 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 120);
+            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 140);
 //            terrain[x][y] = map(noise_gen->GetGradientFractal(xoff, yoff), 0, 1, -100, 150);
             
 //            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;

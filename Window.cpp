@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 50.0f, -100.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -294,7 +294,7 @@ void Window::idle_callback(GLFWwindow* window)
     thunder_timer = (int) clock() / CLOCKS_PER_SEC;
     
     if (thunder_timer % 11 == 0 && thunder_timer != 0 && !thunder){
-        float which_one = rand() % 1;
+        float which_one = (rand() / (double)RAND_MAX) ;
 //        int which_one = (rand() / 4);
         cout << which_one << endl;
         
