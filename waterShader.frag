@@ -20,7 +20,7 @@ in vec3 fromLightVector;
 
 uniform float moveFactor;
 
-const float waveStrength = 0.00375f;
+const float waveStrength = 0.00375f*2.0f*2.0f;
 const float shineDamper = 20.0f; //shinedamper
 const float reflectivity = 1.0f; //reflectivity
 

@@ -408,7 +408,7 @@ void Window::drawSkybox(){
 void Window::drawObjects(){
     drawSkybox();
 
-//    generator->draw(glm::mat4(1.0f));
+    generator->draw(glm::mat4(1.0f));
     
     //Toggle showing particles drawn
     if(parts)

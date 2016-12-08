@@ -39,6 +39,9 @@ private:
     GLuint texture, shaderProgram;
     std::vector<Particle> particles;
     
+    std::random_device r;
+    std::default_random_engine e1;
+    std::uniform_real_distribution<float> uniform_real;
     
     GLuint uModel, uProjection, uModelview;
     

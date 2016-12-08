@@ -11,6 +11,9 @@
 ParticleGen::ParticleGen(int amount, GLuint texture, GLuint shader)
 : amount(amount), texture(texture), shaderProgram(shader) {
     
+    e1 = std::default_random_engine(r());
+    uniform_real = std::uniform_real_distribution<float>(-100.0f,100.0f);
+
     GLfloat particle_quad[] = {
         0.0f, 1.0f, 0.0f, 1.0f,
         1.0f, 0.0f, 1.0f, 0.0f,
@@ -66,8 +69,12 @@ GLuint ParticleGen::firstUnusedParticle(){
 // Respawns particle
 void ParticleGen::respawnParticle(Particle &particle){
 //    srand((unsigned int)time(NULL));
-    GLfloat randomX = ((rand() % 200) - 100);
-    GLfloat randomZ = ((rand() & 200) - 100);
+    
+    float randomX = uniform_real(e1);
+    float randomZ = uniform_real(e1);
+    
+//    GLfloat randomX = ((rand() % 200) - 100);
+//    GLfloat randomZ = ((rand() & 200) - 100);
     GLfloat rColor = 0.5 + ((rand() % 100) / 100.0f);
     particle.Position = glm::vec3(randomX, CLOUD_HEIGHT, randomZ);//Randomize positions on the xy-plane, z should be same
     particle.Color = glm::vec4(rColor, rColor, rColor, 1.0f); //randomize the color

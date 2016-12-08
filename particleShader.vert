@@ -19,6 +19,6 @@ void main()
 //    TexCoords = vertex.zw;
     ParticleColor = color;
 //    gl_Position = projection * modelview * vec4(position.xyz / scale + partPos, 1.0f);
-    gl_Position = projection * modelview * vec4(position.x/scale+partPos.x,
-                                                position.y*scale+partPos.y, position.z/scale+partPos.z, 1.0f);
+    gl_Position = projection * modelview * vec4(position.x/(scale*3.0f)+partPos.x,
+                                                position.y*scale+partPos.y, position.z/(scale*3.0f)+partPos.z, 1.0f);
 }
