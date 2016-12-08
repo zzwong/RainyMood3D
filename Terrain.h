@@ -24,9 +24,11 @@ public:
     void draw(glm::mat4 C);
     void update();
     GLuint getVAO();
-    
+    void updateOctaves(float amt);
+    void updateNormals();
 protected:
     FastNoise * noise_gen;
+    float octaves;
     int cols, rows;
     int scale;
     int width, height;
@@ -38,7 +40,7 @@ protected:
     
     glm::mat4 toWorld;
     std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> textCoords;
+    std::vector<glm::vec3> normals;
     std::vector<GLuint> indices;
     float terrain[MAX_COL][MAX_ROW]; // height map
     

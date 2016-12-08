@@ -111,15 +111,15 @@ void main()
     
 //    color = texture(skybox, TexCoords);
     if(wire){
-        color = vec4(0.0f, .5f, .5f, 1.0f);
+        color = vec4(0.0f, 0.05f, 0.05f, 1.0f);
     }
     else {
-        if (FragPos.y > 100)
-            color = vec4(.87f, .3f, 0.0f, 1.0f);
-        else if (FragPos.y <= 100 && FragPos.y >-100)
-            color = vec4(.47f, .3f, 0.0f, 1.0f);
+        if (FragPos.y > 70)
+            color = vec4(.87f, 1.0f, .93f, 1.0f);
+        else if (FragPos.y <= 70 && FragPos.y > 2)
+            color = vec4(0.0f, 127.0f/255.0f, 18.0f/255.0f, 1.0f);
         else
-            color = vec4(0.0f, .3f, 0.0f, 1.0f);
+            color = vec4(127.0f/255.0f, 66.0f/255.0f, 50.0f/255.0f, 1.0f);
     }
 //
     

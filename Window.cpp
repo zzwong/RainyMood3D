@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 50.0f, -100.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -55,9 +55,13 @@ int mode = 0;
 // Audio related
 ISoundEngine* engine;
 #define SPLOSION "explosion.wav"
+#define RAIN "rain.wav"
+#define THUNDER_1 "thunder1.wav"
+#define THUNDER_2 "thunder2.wav"
 
-//Pause the terrain
+// Key control
 bool pause_key = false;
+bool hmap = false;
 
 // dudvMap path
 #define DU_DV_MAP "waterdudv.ppm"
@@ -74,6 +78,7 @@ SkyBox * skybox;
 // Terrain
 Terrain * tr;
 glm::mat4 trn(1.0f);   // Used for calculating terrain id->matrix
+glm::mat4 hm_mat(1.0f);
 Terrain * hm; // height map...
 
 // Heightmaps
@@ -135,12 +140,13 @@ void Window::initialize_objects()
     
     // initialize
     engine = createIrrKlangDevice();
+    engine->play2D(RAIN, true);
     
     skybox = new SkyBox();
     cube = new Cube(shaderProgram);
 
     
-//    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
+    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
 //    tr = new Terrain(terrainProgram, 2000, 1600, 10);
     tr->update();
@@ -195,8 +201,12 @@ void Window::initialize_objects()
     
     
     //For terrain
+    trn = glm::translate(trn, glm::vec3(-550.0f, -150.0f, -110.0f));
     trn = glm::rotate(trn, glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
-    trn = glm::translate(trn, glm::vec3(-550.0f, -550.0f, -110.0f));
+    
+    hm_mat = glm::translate(hm_mat, glm::vec3(-250.0f, 200.0f, -110.0f));
+    hm_mat = glm::rotate(hm_mat, glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
+//    trn = glm::translate(trn, glm::vec3(-550.0f, -550.0f, -110.0f));
    
     //For water
     water_m = glm::scale(water_m, glm::vec3(3.0f, 3.0f, 3.0f));
@@ -345,7 +355,10 @@ void Window::drawObjects(){
 ////    glUniform1i(glGetUniformLocation(terrainProgram, "terrain"), 9);
 //    glBindTexture(GL_TEXTURE_2D, fieldsTex);
 //    hm->draw(trn);
-    tr->draw(trn);
+    if (!hmap)
+        tr->draw(trn);
+    else
+        hm->draw(hm_mat);
 //    glBindVertexArray(0);
 //    glBindTexture(GL_TEXTURE_2D, 0);
     
@@ -473,7 +486,7 @@ void Window::display_callback(GLFWwindow * window)
     glUseProgram(shaderProgram);
     
 
-    if(!pause_key)
+    if(!pause_key && !hmap)
         tr->update();
     //Draw reflecions
     drawReflection();
@@ -569,6 +582,19 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         if (key == GLFW_KEY_Y && mods == GLFW_MOD_SHIFT){
             trn = glm::translate(trn, glm::vec3(0.0f,0.0f,5.0f));
             std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
+        }
+        if (key == GLFW_KEY_H){
+            hmap = !hmap;
+        }
+        if (mods == GLFW_MOD_SHIFT){
+            if (key == GLFW_KEY_EQUAL){
+                tr->updateOctaves(0.5);
+                std::cout << "doing something up" << std::endl;
+            }
+            if (key == GLFW_KEY_MINUS){
+                tr->updateOctaves(-0.5);
+                std::cout << "doing something down" << std::endl;
+            }
         }
     }
 }

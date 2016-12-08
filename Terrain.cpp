@@ -1,5 +1,6 @@
 
 
+
 #include <stdio.h>
 #include "Terrain.h"
 #include "Window.h"
@@ -8,6 +9,11 @@
 
 float map(float val, float istart, float istop, float ostart, float ostop);
 
+void Terrain::updateOctaves(float amt){
+    octaves += amt;
+    noise_gen->SetFractalOctaves(octaves);
+}
+
 Terrain::Terrain(GLuint shader, int w, int h, int scl){
     this->shaderProgram = shader;
     width = w;
@@ -15,7 +21,11 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     cols = w / scl;
     rows = h / scl;
     scale = scl;
-    noise_gen = new FastNoise(3);
+    octaves = 8;
+    noise_gen = new FastNoise(10);
+    noise_gen->SetFractalLacunarity(2.0f);
+    noise_gen->SetFractalOctaves(octaves);
+//    noise_gen->SetFractalGain(.5f);
     
 //    genTextures();
     std::cout << "cols: " << cols << "rows: "<< rows << " widthxheight "<<width<< " "<<height<<std::endl;
@@ -92,6 +102,14 @@ Terrain::Terrain(GLuint shader, const char* filename, int scl){
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (GLvoid*)0);
     
+    //Bind the normals
+    glBindBuffer(GL_ARRAY_BUFFER, NBO);
+    glBufferData(GL_ARRAY_BUFFER, normals.size()*sizeof(normals), normals.data(), GL_STATIC_DRAW);
+    
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3*sizeof(GLfloat), (GLvoid*)0);
+    
+    
     glBindBuffer(GL_ARRAY_BUFFER,0);
     glBindVertexArray(0);
     
@@ -102,6 +120,7 @@ Terrain::~Terrain(){
     glDeleteVertexArrays(1, &VAO);
     glDeleteBuffers(1, &VBO);
     glDeleteBuffers(1, &EBO);
+    glDeleteBuffers(1, &NBO);
 }
 
 void Terrain::genTextures(){
@@ -132,7 +151,7 @@ void Terrain::genTextures(){
     // Get the locations
     //    loc_grass = glGetUniformLocation(shaderProgram, "grassTex");
     loc_snow   = glGetUniformLocation(shaderProgram, "snowTex");
-    loc_rock   = glGetUniformLocation(shaderProgram, "snowTex");
+    loc_rock   = glGetUniformLocation(shaderProgram, "rockTex");
     loc_fields = glGetUniformLocation(shaderProgram, "fieldsTex");
 }
 
@@ -200,7 +219,7 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
+            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 120);
 //            terrain[x][y] = map(noise_gen->GetGradientFractal(xoff, yoff), 0, 1, -100, 150);
             
 //            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;
@@ -213,14 +232,27 @@ void Terrain::update(){
     for(int y = 0; y < rows-1; y++){
         if (flip){
             for(int x = 0; x < cols; x++){
-                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
-                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+                glm::vec3 a(x*scale, y*scale, terrain[x][y]);
+                glm::vec3 b(x*scale, (y+1)*scale, terrain[x][y+1]);
+                vertices.push_back(a);
+                vertices.push_back(b);
+                
+                normals.push_back(glm::cross(b, a));
+//                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+//                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
             }
             flip = !flip;
         } else {
             for(int x = cols; x >= 0; x--){
-                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
-                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+                glm::vec3 b(x*scale, y*scale, terrain[x][y]);
+                glm::vec3 a(x*scale, (y+1)*scale, terrain[x][y+1]);
+                vertices.push_back(a);
+                vertices.push_back(b);
+                normals.push_back(glm::cross(b, a));
+                
+//                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+//                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+                
             }
             flip = !flip;
         }
