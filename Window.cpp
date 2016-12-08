@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 50.0f, -100.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -111,8 +111,8 @@ GLuint loc_reflection, loc_refraction, loc_dudv, loc_move_factor, loc_cam_pos, l
 //Location of textures
 GLuint dudvTex, normalTex;
 //Post processing locations
-GLuint loc_gauss, loc_neon;
-bool gauss_on = false, neon_on = false;
+GLuint loc_gauss, loc_neon, loc_half_tone, loc_pix_per_row;
+bool gauss_on = false, neon_on = false, half_tone_on = false;
 
 //Time
 clock_t timer;
@@ -150,6 +150,10 @@ void Window::initialize_objects()
     loc_screen = glGetUniformLocation(fullScreenShader, "screen");
     loc_gauss = glGetUniformLocation(fullScreenShader, "gauss");
     loc_neon = glGetUniformLocation(fullScreenShader, "neon");
+    loc_half_tone = glGetUniformLocation(fullScreenShader, "half_tone");
+    loc_pix_per_row = glGetUniformLocation(fullScreenShader, "pixelsPerRow");
+    
+    glUniform1i(loc_pix_per_row, Window::width);
 
     // Textures
 //    faces.push_back("2rt.ppm");
@@ -355,6 +359,8 @@ void Window::resize_callback(GLFWwindow * window, int width, int height)
 {
     Window::width = width;
     Window::height = height;
+    
+    glUniform1i(loc_pix_per_row, Window::width); //Send this to filter
     // Set the viewport size. This is the only matrix that OpenGL maintains for us in modern OpenGL!
     glViewport(0, 0, width, height);
     
@@ -402,7 +408,7 @@ void Window::drawSkybox(){
 void Window::drawObjects(){
     drawSkybox();
 
-    generator->draw(glm::mat4(1.0f));
+//    generator->draw(glm::mat4(1.0f));
     
     //Toggle showing particles drawn
     if(parts)
@@ -431,7 +437,7 @@ void Window::drawObjects(){
 }
 void Window::drawReflection(){
     //Render everything above water (reflection)
-    glUniform4f(clipPlaneN, 0.0f,0.0f,1.0f,0.1f);
+    glUniform4f(clipPlaneN, 0.0f, 1.0f, 0.0f, 0.0f);
     
     //gotta move camera down 2*distance_to_water
     float distance = -2*cam_pos.z;
@@ -450,7 +456,7 @@ void Window::drawReflection(){
     cam_pos.z -= distance;
 }
 void Window::drawRefraction(){
-    glUniform4f(clipPlaneN, 0.0f, 0.0f, -1.0f, 0.0f);
+    glUniform4f(clipPlaneN, 0.0f, -1.0f, 0.0f, 0.f);
     waterFBO->bind(waterFBO->getRefractionFBO());
     //Clear colors
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -554,10 +560,11 @@ void Window::display_callback(GLFWwindow * window)
     glEnableVertexAttribArray(0);
     glEnable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE10);
-    glBindTexture(GL_TEXTURE_2D, screenFBO->getReflTex());
+    glBindTexture(GL_TEXTURE_2D, screenFBO->getReflTex()); //CHANGE TO screenFBO->
     
     glUniform1i(loc_gauss, gauss_on);
     glUniform1i(loc_neon, neon_on);
+    glUniform1i(loc_half_tone, half_tone_on);
     
     screen->draw();
     
@@ -659,24 +666,30 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
                 std::cout << "doing something down" << std::endl;
             }
         }
-        
         if (key == GLFW_KEY_L){
             parts = !parts;
         }
         if (key == GLFW_KEY_G){
             gauss_on = !gauss_on;
+            neon_on = false;
+            half_tone_on = false;
         }
         if (key == GLFW_KEY_N){
             neon_on = !neon_on;
+            gauss_on = false;
+            half_tone_on = false;
         }
-//=======
-//        
-//        if (key == GLFW_KEY_R){
-//            
-//        }
-//        
-//>>>>>>> 14ad8e24514fc53849d8b10095427afa12500312
-    }
+        if (key == GLFW_KEY_T){
+            half_tone_on = !half_tone_on;
+            neon_on = false;
+            gauss_on = false;
+        }
+        if (key == GLFW_KEY_R)
+            cam_pos = glm::vec3(0.0f, 50.0f, -100.0f);		// e  | Position of camera
+            cam_look_at = glm::vec3(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
+            cam_up = glm::vec3(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
+            V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+        }
 }
 
 glm::vec3 Window::trackballMapping(double xpos, double ypos, int width, int height){

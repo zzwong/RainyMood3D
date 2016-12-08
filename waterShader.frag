@@ -62,7 +62,7 @@ void main()
     
     vec3 viewVector = normalize(toCameraVector);
     float refractiveFactor = dot(viewVector, normal);
-    refractiveFactor = pow(refractiveFactor, .5f);
+    refractiveFactor = pow(refractiveFactor, 2.0f);
     
     vec3 reflectedLight = reflect(normalize(fromLightVector),normal);
     float spec = max(dot(reflectedLight,viewVector),0.0f);
