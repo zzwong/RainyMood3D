@@ -57,7 +57,7 @@ struct SpotLight {
 //// Note that you do not have access to the vertex shader's default output, gl_Position.
 in vec3 Normal;
 in vec3 FragPos;
-in vec3 TexCoords;
+in vec2 TexCoords;
 //
 //// You can output many things. The first vec4 type output determines the color of the fragment
 out vec4 color;
@@ -74,6 +74,11 @@ uniform bool normal_coloring;
 
 uniform bool wire;
 uniform bool water;
+uniform bool texturize;
+
+uniform sampler2D snowTex;
+uniform sampler2D rockTex;
+uniform sampler2D fieldsTex;
 
 //
 //// Function prototypes
@@ -105,13 +110,23 @@ void main()
 //        color = vec4(norm, sampleExtraOutput);
     
 //    color = texture(skybox, TexCoords);
-    if(wire)
+    if(wire){
         color = vec4(0.0f, .5f, .5f, 1.0f);
-    else
-        color = vec4(.87f, .3f, 0.0f, 1.0f);
+    }
+    else {
+        if (FragPos.y > 100)
+            color = vec4(.87f, .3f, 0.0f, 1.0f);
+        else if (FragPos.y <= 100 && FragPos.y >-100)
+            color = vec4(.47f, .3f, 0.0f, 1.0f);
+        else
+            color = vec4(0.0f, .3f, 0.0f, 1.0f);
+    }
+//
     
-    if (water)
-        color = vec4(0.0f, 0.0f, 1.0f, 1.0f);
+//    if (texturize){
+//        color = texture(fieldsTex, TexCoords);
+//    } else
+//        color = vec4(.87, .3, 0, 1.0);
     
     // Color everything a hot pink color. An alpha of 1.0f means it is not transparent.
 //    color = vec4(1.0f, 0.41f, 0.7f, sampleExtraOutput);

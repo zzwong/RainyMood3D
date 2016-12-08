@@ -80,12 +80,12 @@ Terrain * hm; // height map...
 #define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
 
 // Terrain Textures
-#define GRASS "grass.ppm"
+//#define GRASS "grass.ppm"
 #define SNOW "snow.ppm"
 #define ROCKS "rocks.ppm"
 #define FIELDS "fields.ppm"
-GLuint grassTex, snowTex, rockTex, fieldsTex;
-GLuint loc_grass, loc_snow, loc_rock, loc_fields;
+GLuint snowTex, rockTex, fieldsTex;
+GLuint loc_snow, loc_rock, loc_fields;
 
 Water * water;
 glm::mat4 water_m(1.0f);
@@ -139,56 +139,20 @@ void Window::initialize_objects()
     cube = new Cube(shaderProgram);
 
     
-    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
+//    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
     tr = new Terrain(shaderProgram, 2000, 1600, 10);
 //    tr = new Terrain(terrainProgram, 2000, 1600, 10);
     tr->update();
     
     // Generate the terrain textures
-    glGenTextures(1, &grassTex);
-    glBindTexture(GL_TEXTURE_2D, grassTex);
-    int grassW, grassH;
-    unsigned char* grass_img = TextureHandler::loadPPM(GRASS, grassH, grassW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, grassW, grassH, 0, GL_RGBA, GL_UNSIGNED_BYTE, grass_img);
-    // Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glGenTextures(1, &snowTex);
-    glBindTexture(GL_TEXTURE_2D, snowTex);
-    int snowW, snowH;
-    unsigned char* snow_img = TextureHandler::loadPPM(SNOW, snowH, snowW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, snowW, snowH, 0, GL_RGBA, GL_UNSIGNED_BYTE, snow_img);
-    //Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glGenTextures(1, &rockTex);
-    glBindTexture(GL_TEXTURE_2D, rockTex);
-    int rockW, rockH;
-    unsigned char* rock_img = TextureHandler::loadPPM(ROCKS, rockH, rockW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, rock_img);
-    //Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glGenTextures(1, &fieldsTex);
-    glBindTexture(GL_TEXTURE_2D, fieldsTex);
-    int fieldsW, fieldsH;
-    unsigned char* fields_img = TextureHandler::loadPPM(FIELDS, fieldsH, fieldsW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, fields_img);
-    //Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    // Get the locations
-    loc_grass = glGetUniformLocation(terrainProgram, "grassTex");
-    loc_snow  = glGetUniformLocation(terrainProgram, "snowTex");
-    loc_rock  = glGetUniformLocation(terrainProgram, "snowTex");
-    loc_fields= glGetUniformLocation(terrainProgram, "fieldsTex");
-    
-    
-    // Done with terrain textures
+//    glGenTextures(1, &grassTex);
+//    glBindTexture(GL_TEXTURE_2D, grassTex);
+//    int grassW, grassH;
+//    unsigned char* grass_img = TextureHandler::loadPPM(GRASS, grassH, grassW);
+//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, grassW, grassH, 0, GL_RGBA, GL_UNSIGNED_BYTE, grass_img);
+//    // Filtering
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
 //    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
 
@@ -368,20 +332,21 @@ void Window::drawObjects(){
     drawSkybox();
     
     glUseProgram(shaderProgram);
-//    glUseProgram(terrainProgram);
-    glEnable(GL_TEXTURE_2D);
-    glBindVertexArray(tr->getVAO());
-    glActiveTexture(GL_TEXTURE9);
-    glUniform1i(glGetUniformLocation(shaderProgram, "terrain"), 0);
-//    glUniform1i(glGetUniformLocation(terrainProgram, "terrain"), 9);
-    glBindTexture(GL_TEXTURE_2D, grassTex);
+//    glUniform1i(loc_fields, 9);
+//    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), true);
+////    glUseProgram(terrainProgram);
+//    glEnable(GL_TEXTURE_2D);
+//    glBindVertexArray(tr->getVAO());
+//    glActiveTexture(GL_TEXTURE9);
+//    glUniform1i(glGetUniformLocation(shaderProgram, "terrain"), 9);
+////    glUniform1i(glGetUniformLocation(terrainProgram, "terrain"), 9);
+//    glBindTexture(GL_TEXTURE_2D, fieldsTex);
+//    hm->draw(trn);
+    tr->draw(trn);
+//    glBindVertexArray(0);
+//    glBindTexture(GL_TEXTURE_2D, 0);
     
-    hm->draw(trn);
-//    tr->draw(trn);
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-
+    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), false);
     cube->draw(glm::mat4(1.0f));
 }
 void Window::drawReflection(){
