@@ -1,5 +1,6 @@
 
 
+
 #include <stdio.h>
 #include "Terrain.h"
 #include "Window.h"
@@ -8,6 +9,11 @@
 
 float map(float val, float istart, float istop, float ostart, float ostop);
 
+void Terrain::updateOctaves(float amt){
+    octaves += amt;
+    noise_gen->SetFractalOctaves(octaves);
+}
+
 Terrain::Terrain(GLuint shader, int w, int h, int scl){
     this->shaderProgram = shader;
     width = w;
@@ -15,8 +21,13 @@ Terrain::Terrain(GLuint shader, int w, int h, int scl){
     cols = w / scl;
     rows = h / scl;
     scale = scl;
-    noise_gen = new FastNoise(3);
+    octaves = 8;
+    noise_gen = new FastNoise(10);
+    noise_gen->SetFractalLacunarity(2.0f);
+    noise_gen->SetFractalOctaves(octaves);
+//    noise_gen->SetFractalGain(.5f);
     
+//    genTextures();
     std::cout << "cols: " << cols << "rows: "<< rows << " widthxheight "<<width<< " "<<height<<std::endl;
     
     update(); // Generate the height map at time of 0
@@ -49,6 +60,8 @@ Terrain::Terrain(GLuint shader, const char* filename, int scl){
     cols = width;// / scl;
     rows = height;// / scl;
     scale = scl;
+    
+//    genTextures();
     
     // Turn a buffer (unsigned char*) of height values to 2D heightmap (terr[x][y])
     for( int row = 0; row < height; row++){
@@ -101,6 +114,38 @@ Terrain::~Terrain(){
     glDeleteBuffers(1, &EBO);
 }
 
+void Terrain::genTextures(){
+    glGenTextures(1, &snowTex);
+    glBindTexture(GL_TEXTURE_2D, snowTex);
+    int snowW, snowH;
+    unsigned char* snow_img = TextureHandler::loadPPM(SNOW, snowH, snowW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, snowW, snowH, 0, GL_RGBA, GL_UNSIGNED_BYTE, snow_img);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    
+    glGenTextures(1, &rockTex);
+    glBindTexture(GL_TEXTURE_2D, rockTex);
+    int rockW, rockH;
+    unsigned char* rock_img = TextureHandler::loadPPM(ROCKS, rockH, rockW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, rock_img);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    
+    glGenTextures(1, &fieldsTex);
+    glBindTexture(GL_TEXTURE_2D, fieldsTex);
+    int fieldsW, fieldsH;
+    unsigned char* fields_img = TextureHandler::loadPPM(FIELDS, fieldsH, fieldsW);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fieldsW, fieldsH, 0, GL_RGBA, GL_UNSIGNED_BYTE, fields_img);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+    
+    // Get the locations
+    //    loc_grass = glGetUniformLocation(shaderProgram, "grassTex");
+    loc_snow   = glGetUniformLocation(shaderProgram, "snowTex");
+    loc_rock   = glGetUniformLocation(shaderProgram, "rockTex");
+    loc_fields = glGetUniformLocation(shaderProgram, "fieldsTex");
+}
+
 void Terrain::draw(glm::mat4 C){
     toWorld = C;
     glm::mat4 modelview = Window::V * toWorld;
@@ -124,6 +169,20 @@ void Terrain::draw(glm::mat4 C){
     // Tell shader to fill triangle strip with color
     glUniform1f( glGetUniformLocation(shaderProgram, "wire"), false);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, (int)vertices.size());
+    
+
+    /*
+     * Texture code snippet here...
+     */
+    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), true);
+    glEnable(GL_TEXTURE_2D);
+//    glUniform1i(loc_fields, 11);
+    glActiveTexture(GL_TEXTURE11);
+    glBindTexture(GL_TEXTURE_2D, fieldsTex);
+    
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, (int) vertices.size());
+    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), false);
     
     
     glBindVertexArray(0);
@@ -151,7 +210,7 @@ void Terrain::update(){
         for (int x = 0; x < cols; x++){
             // terrain[x][y] = map(noise(xoff, yoff), 0, 1, -100, 100);
             // 0--> 1... * [-100-->100]
-            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 100);
+            terrain[x][y] = map(noise_gen->GetValueFractal(xoff, yoff), 0, 1, -100, 120);
 //            terrain[x][y] = map(noise_gen->GetGradientFractal(xoff, yoff), 0, 1, -100, 150);
             
 //            terrain[x][y] = noise_gen->GetGradient(xoff, yoff) * 50;
@@ -164,14 +223,27 @@ void Terrain::update(){
     for(int y = 0; y < rows-1; y++){
         if (flip){
             for(int x = 0; x < cols; x++){
-                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
-                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+                glm::vec3 a(x*scale, y*scale, terrain[x][y]);
+                glm::vec3 b(x*scale, (y+1)*scale, terrain[x][y+1]);
+                vertices.push_back(a);
+                vertices.push_back(b);
+                
+                normals.push_back(glm::cross(b, a));
+//                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+//                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
             }
             flip = !flip;
         } else {
             for(int x = cols; x >= 0; x--){
-                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
-                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+                glm::vec3 b(x*scale, y*scale, terrain[x][y]);
+                glm::vec3 a(x*scale, (y+1)*scale, terrain[x][y+1]);
+                vertices.push_back(a);
+                vertices.push_back(b);
+                normals.push_back(glm::cross(b, a));
+                
+//                vertices.push_back(glm::vec3(x*scale, (y+1)*scale, terrain[x][y+1]));
+//                vertices.push_back(glm::vec3(x*scale, y*scale, terrain[x][y]));
+                
             }
             flip = !flip;
         }

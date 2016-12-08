@@ -7,7 +7,7 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
+glm::vec3 cam_pos(0.0f, 50.0f, -100.0f);		// e  | Position of camera
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -59,9 +59,17 @@ int mode = 0;
 // Audio related
 ISoundEngine* engine;
 #define SPLOSION "explosion.wav"
+#define RAIN "rain.wav"
+#define RAIN_1 "rain1.wav"
+#define THUNDER_1 "thunder1.wav"
+#define THUNDER_2 "thunder2.wav"
+#define THUNDER_3 "thunder3.wav"
+#define THUNDER_4 "thunder4.wav"
 
-//Pause the terrain
+
+// Key control
 bool pause_key = false;
+bool hmap = false;
 
 // dudvMap path
 #define DU_DV_MAP "waterdudv.ppm"
@@ -78,6 +86,7 @@ SkyBox * skybox;
 // Terrain
 Terrain * tr;
 glm::mat4 trn(1.0f);   // Used for calculating terrain id->matrix
+glm::mat4 hm_mat(1.0f);
 Terrain * hm; // height map...
 
 // Heightmaps
@@ -85,12 +94,12 @@ Terrain * hm; // height map...
 #define SD_HEIGHT_MAP "SanDiegoTerrain.ppm"
 
 // Terrain Textures
-#define GRASS "grass.ppm"
+//#define GRASS "grass.ppm"
 #define SNOW "snow.ppm"
 #define ROCKS "rocks.ppm"
 #define FIELDS "fields.ppm"
-GLuint grassTex, snowTex, rockTex, fieldsTex;
-GLuint loc_grass, loc_snow, loc_rock, loc_fields;
+GLuint snowTex, rockTex, fieldsTex;
+GLuint loc_snow, loc_rock, loc_fields;
 
 Water * water;
 glm::mat4 water_m(1.0f);
@@ -108,6 +117,9 @@ bool gauss_on = false, neon_on = false;
 //Time
 clock_t timer;
 double delta_time;
+int thunder_timer = 0;
+bool thunder = false;
+int sampledAt = 0;
 
 //Particles
 ParticleGen * generator;
@@ -158,6 +170,7 @@ void Window::initialize_objects()
     
     // initialize
     engine = createIrrKlangDevice();
+    engine->play2D(RAIN_1, true);
     
     skybox = new SkyBox();
     cube = new Cube(shaderProgram);
@@ -169,50 +182,14 @@ void Window::initialize_objects()
     tr->update();
     
     // Generate the terrain textures
-    glGenTextures(1, &grassTex);
-    glBindTexture(GL_TEXTURE_2D, grassTex);
-    int grassW, grassH;
-    unsigned char* grass_img = TextureHandler::loadPPM(GRASS, grassH, grassW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, grassW, grassH, 0, GL_RGBA, GL_UNSIGNED_BYTE, grass_img);
-    // Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glGenTextures(1, &snowTex);
-    glBindTexture(GL_TEXTURE_2D, snowTex);
-    int snowW, snowH;
-    unsigned char* snow_img = TextureHandler::loadPPM(SNOW, snowH, snowW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, snowW, snowH, 0, GL_RGBA, GL_UNSIGNED_BYTE, snow_img);
-    //Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glGenTextures(1, &rockTex);
-    glBindTexture(GL_TEXTURE_2D, rockTex);
-    int rockW, rockH;
-    unsigned char* rock_img = TextureHandler::loadPPM(ROCKS, rockH, rockW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, rock_img);
-    //Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    glGenTextures(1, &fieldsTex);
-    glBindTexture(GL_TEXTURE_2D, fieldsTex);
-    int fieldsW, fieldsH;
-    unsigned char* fields_img = TextureHandler::loadPPM(FIELDS, fieldsH, fieldsW);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, rockW, rockH, 0, GL_RGBA, GL_UNSIGNED_BYTE, fields_img);
-    //Filtering
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
-    // Get the locations
-    loc_grass = glGetUniformLocation(terrainProgram, "grassTex");
-    loc_snow  = glGetUniformLocation(terrainProgram, "snowTex");
-    loc_rock  = glGetUniformLocation(terrainProgram, "snowTex");
-    loc_fields= glGetUniformLocation(terrainProgram, "fieldsTex");
-    
-    
-    // Done with terrain textures
+//    glGenTextures(1, &grassTex);
+//    glBindTexture(GL_TEXTURE_2D, grassTex);
+//    int grassW, grassH;
+//    unsigned char* grass_img = TextureHandler::loadPPM(GRASS, grassH, grassW);
+//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, grassW, grassH, 0, GL_RGBA, GL_UNSIGNED_BYTE, grass_img);
+//    // Filtering
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
 //    hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
 
@@ -257,8 +234,12 @@ void Window::initialize_objects()
     
     
     //For terrain
+    trn = glm::translate(trn, glm::vec3(-550.0f, -150.0f, -110.0f));
     trn = glm::rotate(trn, glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
-    trn = glm::translate(trn, glm::vec3(-550.0f, -550.0f, -110.0f));
+    
+    hm_mat = glm::translate(hm_mat, glm::vec3(-250.0f, 200.0f, -110.0f));
+    hm_mat = glm::rotate(hm_mat, glm::pi<float>()/180.0f * 90, glm::vec3(1.0, 0, 0));
+//    trn = glm::translate(trn, glm::vec3(-550.0f, -550.0f, -110.0f));
    
     //For water
     water_m = glm::scale(water_m, glm::vec3(3.0f, 3.0f, 3.0f));
@@ -334,6 +315,40 @@ void Window::idle_callback(GLFWwindow* window)
     cube->update();
     generator->update(delta_time, 200);
     
+    thunder_timer = (int) clock() / CLOCKS_PER_SEC;
+    
+    if (thunder_timer % 11 == 0 && thunder_timer != 0 && !thunder){
+        float which_one = rand() % 1;
+//        int which_one = (rand() / 4);
+        cout << which_one << endl;
+        
+//        engine->play2D((char*) thunders[which_one]);
+        if (which_one > 0.25 && which_one <= 0.50){
+            engine->play2D(THUNDER_1);
+            cout<<"playing first sample" <<endl;
+        }
+        else if (which_one <= 0.25){
+            engine->play2D(THUNDER_2);
+            cout<<"playing 2nd sample" <<endl;
+        }
+        else if (which_one > 0.75){
+            engine->play2D(THUNDER_3);
+            cout << "playing 3rd sample" <<endl;
+        } else {
+            engine->play2D(THUNDER_4);
+            cout << "playing 4th sample" <<endl;
+        }
+        thunder = true;
+        cout << "hurrah" << endl;
+        sampledAt = thunder_timer;
+    }
+    if (thunder_timer > sampledAt)
+        thunder = false;
+    
+    
+
+    
+//    if (delta_time % )
 }
 
 void Window::resize_callback(GLFWwindow * window, int width, int height)
@@ -394,20 +409,24 @@ void Window::drawObjects(){
         std::cout << "Particles drawn this frame: " << parts_drawn << "\n";
     
     glUseProgram(shaderProgram);
-//    glUseProgram(terrainProgram);
-    glEnable(GL_TEXTURE_2D);
-    glBindVertexArray(tr->getVAO());
-    glActiveTexture(GL_TEXTURE9);
-    glUniform1i(glGetUniformLocation(shaderProgram, "terrain"), 0);
-//    glUniform1i(glGetUniformLocation(terrainProgram, "terrain"), 9);
-    glBindTexture(GL_TEXTURE_2D, grassTex);
+//    glUniform1i(loc_fields, 9);
+//    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), true);
+////    glUseProgram(terrainProgram);
+//    glEnable(GL_TEXTURE_2D);
+//    glBindVertexArray(tr->getVAO());
+//    glActiveTexture(GL_TEXTURE9);
+//    glUniform1i(glGetUniformLocation(shaderProgram, "terrain"), 9);
+////    glUniform1i(glGetUniformLocation(terrainProgram, "terrain"), 9);
+//    glBindTexture(GL_TEXTURE_2D, fieldsTex);
+//    hm->draw(trn);
+    if (!hmap)
+        tr->draw(trn);
+    else
+        hm->draw(hm_mat);
+//    glBindVertexArray(0);
+//    glBindTexture(GL_TEXTURE_2D, 0);
     
-    hm->draw(trn);
-//    tr->draw(trn);
-    glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    
-
+    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), false);
     cube->draw(glm::mat4(1.0f));
 }
 void Window::drawReflection(){
@@ -505,7 +524,7 @@ void Window::drawScene(){
     
     glUseProgram(shaderProgram);
 
-    if(!pause_key)
+    if(!pause_key && !hmap)
         tr->update();
     //Draw reflecions
     drawReflection();
@@ -626,6 +645,21 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
             trn = glm::translate(trn, glm::vec3(0.0f,0.0f,5.0f));
             std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
         }
+
+        if (key == GLFW_KEY_H){
+            hmap = !hmap;
+        }
+        if (mods == GLFW_MOD_SHIFT){
+            if (key == GLFW_KEY_EQUAL){
+                tr->updateOctaves(0.5);
+                std::cout << "doing something up" << std::endl;
+            }
+            if (key == GLFW_KEY_MINUS){
+                tr->updateOctaves(-0.5);
+                std::cout << "doing something down" << std::endl;
+            }
+        }
+        
         if (key == GLFW_KEY_L){
             parts = !parts;
         }
@@ -635,6 +669,13 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         if (key == GLFW_KEY_N){
             neon_on = !neon_on;
         }
+//=======
+//        
+//        if (key == GLFW_KEY_R){
+//            
+//        }
+//        
+//>>>>>>> 14ad8e24514fc53849d8b10095427afa12500312
     }
 }
 

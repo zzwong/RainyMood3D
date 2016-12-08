@@ -9,6 +9,11 @@
 #define MAX_COL 1920
 #define MAX_ROW 1080
 
+#define FIELDS "fields.ppm"
+#define ROCKS  "rocks.ppm"
+#define SNOW   "snow.ppm"
+
+
 class Terrain : public Geode {
     
 public:
@@ -19,22 +24,27 @@ public:
     void draw(glm::mat4 C);
     void update();
     GLuint getVAO();
-    
+    void updateOctaves(float amt);
+    void updateNormals();
 protected:
     FastNoise * noise_gen;
+    float octaves;
     int cols, rows;
     int scale;
     int width, height;
     float flying = 0;
     float yTerrain = 0;
     unsigned char* hmap;
+    GLuint snowTex, rockTex, fieldsTex;
+    GLuint loc_snow, loc_rock, loc_fields;
     
     glm::mat4 toWorld;
     std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> textCoords;
+    std::vector<glm::vec3> normals;
     std::vector<GLuint> indices;
     float terrain[MAX_COL][MAX_ROW]; // height map
     
+    void genTextures();
     
 };
 

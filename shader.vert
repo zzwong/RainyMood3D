@@ -14,12 +14,14 @@ uniform mat4 projection;
 uniform mat4 modelview;
 uniform mat4 model;
 
+uniform float TERRAIN_WIDTH;
+
 // Outputs of the vertex shader are the inputs of the same name of the fragment shader.
 // The default output, gl_Position, should be assigned something. You can define as many
 // extra outputs as you need.
 out vec3 Normal;
 out vec3 FragPos;
-//out vec3 TexCoords;
+out vec2 TexCoords;
 
 uniform vec4 plane;
 
@@ -33,7 +35,10 @@ void main()
     gl_Position = projection * worldPosition;
     FragPos = vec3(model * vec4(position, 1.0f));
     Normal = normal;
-//  TexCoords = position;
+//    TexCoords = position;
+//    TexCoords = position.xyz;//  / TERRAIN_WIDTH;
+    TexCoords = position.xz / 2000;
+
 }
 
 

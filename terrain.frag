@@ -9,11 +9,19 @@ uniform sampler2D snowTex;
 uniform sampler2D rockTex;
 uniform sampler2D fieldsTex;
 
+uniform bool wire;
+uniform bool water;
+
 void main()
 {
     // Color everything a hot blue color. An alpha of 1.0f means it is not transparent.
 //    color = vec4(1.0f, 0.0f, 1.0f, 1.0f);
     vec3 norm = normalize(Normal);
     vec3 viewDir = normalize(viewPos - FragPos);
-    color = texture(grassTex, TexCoords);
+    if(wire)
+        color = vec4(0.0f, .5f, .5f, 1.0f);
+    else
+        color = vec4(.87f, .3f, 0.0f, 1.0f);
+    
+//    color = texture(grassTex, TexCoords);
 }
