@@ -39,6 +39,7 @@ private:
     GLuint texture, shaderProgram;
     std::vector<Particle> particles;
     
+    
     GLuint uModel, uProjection, uModelview;
     
     // Returns the first Particle index that's currently unused e.g. Life <= 0.0f or 0 if no particle is currently inactive

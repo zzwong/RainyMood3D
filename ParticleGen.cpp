@@ -91,12 +91,15 @@ void ParticleGen::draw(glm::mat4 C){
     glUniformMatrix4fv(uModelview, 1, GL_FALSE, &modelview[0][0]);
     glUniformMatrix4fv(uModel, 1, GL_FALSE, &this->toWorld[0][0]);
     
+    //Reset particles drawn
+    Window::parts_drawn = 0;
+    
     glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     for (Particle particle : this->particles)
     {
         if (particle.Life > 0.0f)
         {
-            
+            Window::parts_drawn++;
 //            this->shader.SetVector2f("offset", particle.Position);
 //            this->shader.SetVector4f("color", particle.Color);
 //            this->texture.Bind();

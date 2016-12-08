@@ -102,8 +102,10 @@ GLuint dudvTex, normalTex;
 clock_t timer;
 double delta_time;
 
+//Particles
 ParticleGen * generator;
-
+int Window::parts_drawn = 0;
+bool parts = false;
 void Window::initialize_objects()
 {
     // Load shader programs.
@@ -369,7 +371,11 @@ void Window::drawObjects(){
     drawSkybox();
 
     generator->draw(glm::mat4(1.0f));
-
+    
+    //Toggle showing particles drawn
+    if(parts)
+        std::cout << "Particles drawn this frame: " << parts_drawn << "\n";
+    
     glUseProgram(shaderProgram);
 //    glUseProgram(terrainProgram);
     glEnable(GL_TEXTURE_2D);
@@ -604,6 +610,9 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         if (key == GLFW_KEY_Y && mods == GLFW_MOD_SHIFT){
             trn = glm::translate(trn, glm::vec3(0.0f,0.0f,5.0f));
             std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
+        }
+        if (key == GLFW_KEY_L){
+            parts = !parts;
         }
     }
 }
