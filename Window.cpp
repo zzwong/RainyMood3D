@@ -7,7 +7,8 @@ const char* window_title = "CSE 167 Final Project";
 int tr_counter = 0;
 
 // Default camera parameters
-glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
+//glm::vec3 cam_pos(0.0f, 0.0f, -100.0f);		// e  | Position of camera
+glm::vec3 cam_pos(-50.0f, 8.0f, -90.0);
 glm::vec3 cam_look_at(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
 glm::vec3 cam_up(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
 
@@ -111,8 +112,9 @@ GLuint loc_reflection, loc_refraction, loc_dudv, loc_move_factor, loc_cam_pos, l
 //Location of textures
 GLuint dudvTex, normalTex;
 //Post processing locations
-GLuint loc_gauss, loc_neon;
-bool gauss_on = false, neon_on = false, show_cubes = false;
+GLuint loc_gauss, loc_neon, loc_half_tone, loc_pix_per_row;
+bool gauss_on = false, neon_on = false, half_tone_on = false, show_cubes = false;
+
 
 //Time
 clock_t timer;
@@ -131,6 +133,10 @@ FullscreenQuad * screen;
 GLuint loc_screen;
 FBO * screenFBO;
 
+
+
+bool first_time = true;
+
 void Window::initialize_objects()
 {
     // Load shader programs.
@@ -142,7 +148,7 @@ void Window::initialize_objects()
     fullScreenShader = LoadShaders(FS_SHADER_V, FS_SHADER_F);
     
     //Particles
-    generator = new ParticleGen(10000, 0, particleProgram);
+    generator = new ParticleGen(20000, 0, particleProgram);
     
     //New full screen quad
     screen = new FullscreenQuad(fullScreenShader);
@@ -150,6 +156,10 @@ void Window::initialize_objects()
     loc_screen = glGetUniformLocation(fullScreenShader, "screen");
     loc_gauss = glGetUniformLocation(fullScreenShader, "gauss");
     loc_neon = glGetUniformLocation(fullScreenShader, "neon");
+    loc_half_tone = glGetUniformLocation(fullScreenShader, "half_tone");
+    loc_pix_per_row = glGetUniformLocation(fullScreenShader, "pixelsPerRow");
+    
+    glUniform1i(loc_pix_per_row, Window::width);
 
     // Textures
 //    faces.push_back("2rt.ppm");
@@ -177,7 +187,7 @@ void Window::initialize_objects()
 
     
     hm = new Terrain(shaderProgram, SIMPLE_HEIGHT_MAP, 10);
-    tr = new Terrain(shaderProgram, 2000, 1600, 10);
+    tr = new Terrain(shaderProgram, 1000, 800, 10);
 //    tr = new Terrain(terrainProgram, 2000, 1600, 10);
     tr->update();
     
@@ -306,7 +316,7 @@ GLFWwindow* Window::create_window(int width, int height)
     
     // Call the resize callback to make sure things get drawn immediately
     Window::resize_callback(window, width, height);
-    
+    first_time = false;
     return window;
 }
 
@@ -318,6 +328,7 @@ void Window::idle_callback(GLFWwindow* window)
     thunder_timer = (int) clock() / CLOCKS_PER_SEC;
     
     if (thunder_timer % 11 == 0 && thunder_timer != 0 && !thunder){
+        neon_on = true;
         float which_one = (rand() / (double)RAND_MAX) ;
 //        int which_one = (rand() / 4);
         cout << which_one << endl;
@@ -342,19 +353,21 @@ void Window::idle_callback(GLFWwindow* window)
         cout << "hurrah" << endl;
         sampledAt = thunder_timer;
     }
-    if (thunder_timer > sampledAt)
+    if (thunder_timer > sampledAt){
         thunder = false;
-    
-    
-
-    
+        neon_on = false;
+    }
 //    if (delta_time % )
+    
+//    cout << to_string(cam_pos) << " " << to_string(cam_look_at) << endl;
 }
 
 void Window::resize_callback(GLFWwindow * window, int width, int height)
 {
     Window::width = width;
     Window::height = height;
+    
+    glUniform1i(loc_pix_per_row, Window::width); //Send this to filter
     // Set the viewport size. This is the only matrix that OpenGL maintains for us in modern OpenGL!
     glViewport(0, 0, width, height);
     
@@ -363,7 +376,13 @@ void Window::resize_callback(GLFWwindow * window, int width, int height)
         P = glm::perspective(45.0f, (float)width / (float)height, 0.1f, 1000.0f);
         //0.1f is near
         //1000.0f is far
+//        cam_pos.y += 500.0;
         V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+    }
+    
+    if (!first_time){
+//        trn = glm::scale(trn, glm::vec3(0.55, 0.55, 0.55));
+//        water_m = glm::scale(water_m, glm::vec3(0.3f, .3f, .3f));
     }
 }
 
@@ -443,7 +462,7 @@ void Window::drawObjects(){
 }
 void Window::drawReflection(){
     //Render everything above water (reflection)
-    glUniform4f(clipPlaneN, 0.0f,0.0f,1.0f,0.1f);
+    glUniform4f(clipPlaneN, 0.0f, 1.0f, 0.0f, 0.0f);
     
     //gotta move camera down 2*distance_to_water
     float distance = -2*cam_pos.z;
@@ -462,7 +481,7 @@ void Window::drawReflection(){
     cam_pos.z -= distance;
 }
 void Window::drawRefraction(){
-    glUniform4f(clipPlaneN, 0.0f, 0.0f, -1.0f, 0.0f);
+    glUniform4f(clipPlaneN, 0.0f, -1.0f, 0.0f, 0.f);
     waterFBO->bind(waterFBO->getRefractionFBO());
     //Clear colors
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -566,10 +585,11 @@ void Window::display_callback(GLFWwindow * window)
     glEnableVertexAttribArray(0);
     glEnable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE10);
-    glBindTexture(GL_TEXTURE_2D, screenFBO->getReflTex());
+    glBindTexture(GL_TEXTURE_2D, screenFBO->getReflTex()); //CHANGE TO screenFBO->
     
     glUniform1i(loc_gauss, gauss_on);
     glUniform1i(loc_neon, neon_on);
+    glUniform1i(loc_half_tone, half_tone_on);
     
     screen->draw();
     
@@ -671,27 +691,34 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
                 std::cout << "doing something down" << std::endl;
             }
         }
-        
         if (key == GLFW_KEY_L){
             parts = !parts;
         }
         if (key == GLFW_KEY_G){
             gauss_on = !gauss_on;
+            neon_on = false;
+            half_tone_on = false;
         }
         if (key == GLFW_KEY_N){
             neon_on = !neon_on;
+            gauss_on = false;
+            half_tone_on = false;
         }
-//=======
-//        
-//        if (key == GLFW_KEY_R){
-//            
-//        }
-//        
-//>>>>>>> 14ad8e24514fc53849d8b10095427afa12500312
-        
+        if (key == GLFW_KEY_T){
+            half_tone_on = !half_tone_on;
+            neon_on = false;
+            gauss_on = false;
+        }
+        if (key == GLFW_KEY_R){
+            cam_pos = glm::vec3(0.0f, 50.0f, -100.0f);		// e  | Position of camera
+            cam_look_at = glm::vec3(0.0f, 0.0f, 0.0f);	// d  | This is where the camera looks at
+            cam_up = glm::vec3(0.0f, 1.0f, 0.0f);			// up | What orientation "up" is
+            V = glm::lookAt(cam_pos, cam_look_at, cam_up);
+        }
         if (key == GLFW_KEY_C){
             show_cubes = !show_cubes;
         }
+    
     }
 }
 

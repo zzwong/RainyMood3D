@@ -261,3 +261,7 @@ GLuint Terrain::getVAO(){
     return VAO;
 }
 
+void Terrain::setScale(int scl){
+    scale = scl;
+}
+

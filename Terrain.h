@@ -26,6 +26,7 @@ public:
     GLuint getVAO();
     void updateOctaves(float amt);
     void updateNormals();
+    void setScale(int scl);
 protected:
     FastNoise * noise_gen;
     float octaves;
