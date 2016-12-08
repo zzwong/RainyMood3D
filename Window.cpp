@@ -17,6 +17,7 @@ GLint skyShaderProgram;
 GLint waterProgram;
 GLint terrainProgram;
 GLint particleProgram;
+GLint fullScreenShader;
 GLuint clipPlaneW, clipPlaneN;
 
 // Texture
@@ -38,6 +39,9 @@ int rightMouseDown;
 #define T_F_SHADER_PATH "../terrain.frag"
 #define P_SHADER_V "../particleShader.vert"
 #define P_SHADER_F "../particleShader.frag"
+#define FS_SHADER_V "../fullScreenShader.vert"
+#define FS_SHADER_F "../fullScreenShader.frag"
+
 
 // Camera movement
 glm::vec3 lastPoint;
@@ -106,6 +110,9 @@ FBO * waterFBO;
 GLuint loc_reflection, loc_refraction, loc_dudv, loc_move_factor, loc_cam_pos, loc_normal_map, loc_depth_map;
 //Location of textures
 GLuint dudvTex, normalTex;
+//Post processing locations
+GLuint loc_gauss, loc_neon;
+bool gauss_on = false, neon_on = false;
 
 //Time
 clock_t timer;
@@ -118,6 +125,12 @@ int sampledAt = 0;
 ParticleGen * generator;
 int Window::parts_drawn = 0;
 bool parts = false;
+
+//Post-processing
+FullscreenQuad * screen;
+GLuint loc_screen;
+FBO * screenFBO;
+
 void Window::initialize_objects()
 {
     // Load shader programs.
@@ -126,9 +139,17 @@ void Window::initialize_objects()
     waterProgram = LoadShaders(W_V_SHADER_PATH, W_F_SHADER_PATH);
     terrainProgram = LoadShaders(T_V_SHADER_PATH, T_F_SHADER_PATH);
     particleProgram = LoadShaders(P_SHADER_V, P_SHADER_F);
+    fullScreenShader = LoadShaders(FS_SHADER_V, FS_SHADER_F);
     
     //Particles
     generator = new ParticleGen(10000, 0, particleProgram);
+    
+    //New full screen quad
+    screen = new FullscreenQuad(fullScreenShader);
+    
+    loc_screen = glGetUniformLocation(fullScreenShader, "screen");
+    loc_gauss = glGetUniformLocation(fullScreenShader, "gauss");
+    loc_neon = glGetUniformLocation(fullScreenShader, "neon");
 
     // Textures
 //    faces.push_back("2rt.ppm");
@@ -174,6 +195,9 @@ void Window::initialize_objects()
 
     //Create the water FBO
     waterFBO = new FBO();
+    //Create the screen FBO;
+    screenFBO = new FBO();
+    
     glUseProgram(waterProgram);
     water = new Water(waterProgram);
 
@@ -351,19 +375,12 @@ void Window::invertPitch(){
     cam_look_at.x = glm::cos(invertPitch)*glm::cos(yaw);
     cam_look_at.y = glm::sin(invertPitch);
     cam_look_at.z = glm::cos(invertPitch)*glm::sin(yaw);
-    
-    //SWAP Y AND Z MAYBE?
-    //cam_look_at.y = glm::cos(invertPitch)*glm::sin(yaw);
-    //cam_look_at.z = glm::sin(invertPitch);
-
 }
 
 void Window::drawSkybox(){
     // Skybox
     glUseProgram(skyShaderProgram);
-//    V = glm::mat4(glm::mat3(Window::V));
     glEnable(GL_CULL_FACE);
-//    glCullFace(GL_BACK);
     glFrontFace(GL_CW);
     glDepthMask(GL_FALSE);
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -417,7 +434,7 @@ void Window::drawReflection(){
     glUniform4f(clipPlaneN, 0.0f,0.0f,1.0f,0.1f);
     
     //gotta move camera down 2*distance_to_water
-    float distance = 2*(100);
+    float distance = -2*cam_pos.z;
     cam_pos.z += distance; //-Z IS UP / +Z IS DOWN
     invertPitch();
     
@@ -441,42 +458,18 @@ void Window::drawRefraction(){
     drawObjects();
 }
 
-//<<<<<<< HEAD
-//    
-//    //Render everything below water (refraction)
-//    glUniform4f(clipPlaneW, 0.0f, 1.0f, 0.0f, 140.0f);
-//    water->bindFrameBuffer(water->getRefractionFBO(), width, height);
-//    
-////    tr->draw(trn);
-//    cube->draw(glm::mat4(1.0f));
-//    
-//    //Render everything
-//    glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f,-140.0f);
-//    glUseProgram(waterProgram);
-//    glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 140.0f);
-//    water->unbindFrameBuffer();
-//    glUseProgram(shaderProgram);
-//    tr->draw(trn);
-////    hm->draw(trn);
-//    cube->draw(glm::mat4(1.0f));
-//=======
 void Window::drawAll(){
     glUniform4f(clipPlaneN, 0.0f, 0.0f,0.0f, 0.0f);
     glUseProgram(waterProgram);
     glUniform4f(clipPlaneW, 0.0f, 0.0f, 0.0f, 0.0f);
-    waterFBO->unbind();
+//    waterFBO->unbind();
     
     //Draw things here <<<<<<<<
     drawObjects();
-
 }
 
 void Window::drawWater(){
     glUseProgram(waterProgram);
-//    //Move the waves
-//    move_factor += (WAVE_SPEED*delta_time);
-//    move_factor = fmod(move_factor, 1.0f);
-//    glUniform1f(loc_move_factor, move_factor);
     
     //Send camera position
     glUniform3f(loc_cam_pos, cam_pos.x, cam_pos.y, cam_pos.z);
@@ -512,10 +505,9 @@ void Window::drawWater(){
     glDisable(GL_BLEND);
 }
 
-void Window::display_callback(GLFWwindow * window)
-{
+void Window::drawScene(){
     tr_counter += 1;
-
+    
     //Get time (seconds) (start)
     timer = clock();
     
@@ -531,7 +523,6 @@ void Window::display_callback(GLFWwindow * window)
     drawSkybox();
     
     glUseProgram(shaderProgram);
-    
 
     if(!pause_key && !hmap)
         tr->update();
@@ -542,9 +533,33 @@ void Window::display_callback(GLFWwindow * window)
     drawRefraction();
     
     //Render everything
+    screenFBO->bind(screenFBO->getReflectionFBO());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
     drawAll();
     //Draw the water
     drawWater();
+}
+
+void Window::display_callback(GLFWwindow * window)
+{
+    
+    drawScene();
+    
+    screenFBO->unbind();
+
+    glUseProgram(fullScreenShader);
+    glBindVertexArray(screen->getVAO());
+    glUniform1i(loc_screen, 10); //bind screen to unit 10
+    glEnableVertexAttribArray(0);
+    glEnable(GL_TEXTURE_2D);
+    glActiveTexture(GL_TEXTURE10);
+    glBindTexture(GL_TEXTURE_2D, screenFBO->getReflTex());
+    
+    glUniform1i(loc_gauss, gauss_on);
+    glUniform1i(loc_neon, neon_on);
+    
+    screen->draw();
     
     // Gets events, including input such as keyboard and mouse or window resizinh
     glfwPollEvents();
@@ -648,11 +663,19 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
         if (key == GLFW_KEY_L){
             parts = !parts;
         }
-        
-        if (key == GLFW_KEY_R){
-            
+        if (key == GLFW_KEY_G){
+            gauss_on = !gauss_on;
         }
-        
+        if (key == GLFW_KEY_N){
+            neon_on = !neon_on;
+        }
+//=======
+//        
+//        if (key == GLFW_KEY_R){
+//            
+//        }
+//        
+//>>>>>>> 14ad8e24514fc53849d8b10095427afa12500312
     }
 }
 

@@ -112,7 +112,7 @@ void FBO::bind(GLuint framebuffer){
 }
 
 void FBO::unbind(){
-    glDisable(GL_BLEND);
+//    glDisable(GL_BLEND);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, Window::width, Window::height);
 }

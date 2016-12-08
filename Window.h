@@ -46,6 +46,7 @@
 
 #include "FBO.h"
 #include "ParticleGen.h"
+#include "FullscreenQuad.h"
 
 #include <irrKlang.h>
 
@@ -83,6 +84,7 @@ public:
     static void drawAll();
     static void drawWater();
     static void invertPitch();
+    static void drawScene();
 };
 
 
