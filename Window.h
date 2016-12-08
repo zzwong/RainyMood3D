@@ -60,6 +60,7 @@ public:
     static double mouseX, mouseY;
     static double currentScrollOffset;
     static int width, height;
+    static int parts_drawn;
     static glm::mat4 P, V; // Projection and View
     
     static void initialize_objects();

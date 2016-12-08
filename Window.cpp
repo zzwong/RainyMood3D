@@ -56,8 +56,12 @@ int mode = 0;
 ISoundEngine* engine;
 #define SPLOSION "explosion.wav"
 #define RAIN "rain.wav"
+#define RAIN_1 "rain1.wav"
 #define THUNDER_1 "thunder1.wav"
 #define THUNDER_2 "thunder2.wav"
+#define THUNDER_3 "thunder3.wav"
+#define THUNDER_4 "thunder4.wav"
+
 
 // Key control
 bool pause_key = false;
@@ -106,9 +110,14 @@ GLuint dudvTex, normalTex;
 //Time
 clock_t timer;
 double delta_time;
+int thunder_timer = 0;
+bool thunder = false;
+int sampledAt = 0;
 
+//Particles
 ParticleGen * generator;
-
+int Window::parts_drawn = 0;
+bool parts = false;
 void Window::initialize_objects()
 {
     // Load shader programs.
@@ -140,7 +149,7 @@ void Window::initialize_objects()
     
     // initialize
     engine = createIrrKlangDevice();
-    engine->play2D(RAIN, true);
+    engine->play2D(RAIN_1, true);
     
     skybox = new SkyBox();
     cube = new Cube(shaderProgram);
@@ -282,6 +291,40 @@ void Window::idle_callback(GLFWwindow* window)
     cube->update();
     generator->update(delta_time, 200);
     
+    thunder_timer = (int) clock() / CLOCKS_PER_SEC;
+    
+    if (thunder_timer % 11 == 0 && thunder_timer != 0 && !thunder){
+        float which_one = rand() % 1;
+//        int which_one = (rand() / 4);
+        cout << which_one << endl;
+        
+//        engine->play2D((char*) thunders[which_one]);
+        if (which_one > 0.25 && which_one <= 0.50){
+            engine->play2D(THUNDER_1);
+            cout<<"playing first sample" <<endl;
+        }
+        else if (which_one <= 0.25){
+            engine->play2D(THUNDER_2);
+            cout<<"playing 2nd sample" <<endl;
+        }
+        else if (which_one > 0.75){
+            engine->play2D(THUNDER_3);
+            cout << "playing 3rd sample" <<endl;
+        } else {
+            engine->play2D(THUNDER_4);
+            cout << "playing 4th sample" <<endl;
+        }
+        thunder = true;
+        cout << "hurrah" << endl;
+        sampledAt = thunder_timer;
+    }
+    if (thunder_timer > sampledAt)
+        thunder = false;
+    
+    
+
+    
+//    if (delta_time % )
 }
 
 void Window::resize_callback(GLFWwindow * window, int width, int height)
@@ -343,7 +386,11 @@ void Window::drawObjects(){
     drawSkybox();
 
     generator->draw(glm::mat4(1.0f));
-
+    
+    //Toggle showing particles drawn
+    if(parts)
+        std::cout << "Particles drawn this frame: " << parts_drawn << "\n";
+    
     glUseProgram(shaderProgram);
 //    glUniform1i(loc_fields, 9);
 //    glUniform1i(glGetUniformLocation(shaderProgram, "texturize"), true);
@@ -583,6 +630,7 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
             trn = glm::translate(trn, glm::vec3(0.0f,0.0f,5.0f));
             std::cout << glm::to_string(trn) << " " << buttonPush++ << std::endl;
         }
+
         if (key == GLFW_KEY_H){
             hmap = !hmap;
         }
@@ -596,6 +644,15 @@ void Window::key_callback(GLFWwindow* window, int key, int scancode, int action,
                 std::cout << "doing something down" << std::endl;
             }
         }
+        
+        if (key == GLFW_KEY_L){
+            parts = !parts;
+        }
+        
+        if (key == GLFW_KEY_R){
+            
+        }
+        
     }
 }
 
